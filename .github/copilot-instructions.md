@@ -47,7 +47,7 @@ Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `s
 
 ## Supabase and security invariants
 
-- Browser code may use only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, as shown in `.env.example`. Never expose a service-role key or other privileged secret in client code or committed environment files.
+- Browser code may use only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, as shown in `.env.example`. Never expose a service-role key or other privileged secret in client code or committed environment files.
 - Supabase Row Level Security is the authorization boundary. Frontend visibility or route guards are not authorization, and trainer restrictions must be enforced by PostgreSQL/Supabase RLS.
 - Model database tables with UUID primary keys, `created_at`/`updated_at` timestamps, lowercase `snake_case`, foreign keys, and database constraints. Store timestamps in UTC and use the school timezone setting for display.
 - Do not duplicate server data in client state. Do not denormalize values such as group student counts or schedules when their relational source is authoritative.
