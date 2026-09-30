@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(15);
 
 insert into auth.users (
   id,
@@ -273,6 +273,33 @@ select is(
   (select count(*) from public.groups),
   0::bigint,
   'inactive trainer cannot access groups'
+);
+
+reset role;
+
+select ok(
+  has_schema_privilege('service_role', 'public', 'usage'),
+  'service_role can use the public schema'
+);
+
+select ok(
+  has_table_privilege('service_role', 'public.profiles', 'select'),
+  'service_role can select profiles'
+);
+
+select ok(
+  has_column_privilege('service_role', 'public.profiles', 'full_name', 'update'),
+  'service_role can update profile full_name'
+);
+
+select ok(
+  has_column_privilege('service_role', 'public.profiles', 'role', 'update'),
+  'service_role can update profile role'
+);
+
+select ok(
+  has_column_privilege('service_role', 'public.profiles', 'active', 'update'),
+  'service_role can update profile active'
 );
 
 select * from finish();
