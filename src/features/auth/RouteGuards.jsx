@@ -46,3 +46,18 @@ export function PublicOnlyRoute() {
 
   return session ? <Navigate replace to="/app" /> : <Outlet />
 }
+
+export function AdminRoute() {
+  const { profile } = useAuth()
+
+  if (profile?.role !== 'admin') {
+    return (
+      <ErrorState
+        description="Only administrators can manage application users."
+        title="Administrator access required"
+      />
+    )
+  }
+
+  return <Outlet />
+}

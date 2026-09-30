@@ -17,4 +17,4 @@ Apply the migrations before creating the first application user. The `on_auth_us
 
 3. Confirm the statement changed exactly one row, then sign in through `/login` and replace the temporary password if required.
 
-This procedure uses the Supabase Dashboard's privileged database access and does not expose a service-role key, secret key, or admin-creation capability to the browser. Trainer invitations and browser-accessible user administration are intentionally deferred to Milestone 3's secured `admin-users` Edge Function.
+This procedure uses the Supabase Dashboard's privileged database access and does not expose a secret key or admin-creation capability to the browser. After the Milestone 3 Edge Function is deployed, active administrators manage invitations, roles, activation, and deletion through the secured `admin-users` function; its `SUPABASE_SECRET_KEYS` configuration remains server-side.

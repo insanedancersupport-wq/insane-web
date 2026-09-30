@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { EmptyState } from '../components/feedback/EmptyState'
 import { Button } from '../components/ui/Button'
@@ -37,6 +38,9 @@ export function App() {
           action={(
             <div className="dashboard-placeholder__actions">
               {signOutError && <p role="alert">{signOutError}</p>}
+              {profile.role === 'admin' && (
+                <Link className="button button--tertiary" to="/app/users">Manage users</Link>
+              )}
               <Button onClick={handleSignOut} variant="secondary">Sign out</Button>
             </div>
           )}
