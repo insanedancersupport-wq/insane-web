@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(31);
 
 insert into auth.users (
   id,
@@ -80,10 +80,10 @@ values
   ('30000000-0000-4000-8000-000000000001', 'Student', 'One'),
   ('30000000-0000-4000-8000-000000000002', 'Student', 'Two');
 
-insert into public.student_groups (student_id, group_id)
+insert into public.student_groups (student_id, group_id, joined_on)
 values
-  ('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001'),
-  ('30000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000002');
+  ('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', date '2025-01-15'),
+  ('30000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000002', null);
 
 insert into public.schedule_entries (id, title, entry_type, group_id, trainer_id, starts_at, ends_at)
 values
@@ -300,6 +300,206 @@ select ok(
 select ok(
   has_column_privilege('service_role', 'public.profiles', 'active', 'update'),
   'service_role can update profile active'
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000002', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select throws_ok(
+  $$
+    select public.reconcile_group_trainers(
+      '20000000-0000-4000-8000-000000000001',
+      array['10000000-0000-4000-8000-000000000002']::uuid[],
+      '10000000-0000-4000-8000-000000000002'
+    )
+  $$,
+  '42501',
+  'Administrator access is required.',
+  'trainer cannot execute group trainer reconciliation'
+);
+
+reset role;
+set local role anon;
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.reconcile_student_groups(uuid, uuid[])',
+    'execute'
+  ),
+  'anonymous callers cannot execute student group reconciliation'
+);
+
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '00000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+
+select throws_ok(
+  $$
+    select public.reconcile_group_trainers(
+      '20000000-0000-4000-8000-000000000001',
+      array[
+        '10000000-0000-4000-8000-000000000002',
+        '90000000-0000-4000-8000-000000000001'
+      ]::uuid[],
+      '10000000-0000-4000-8000-000000000002'
+    )
+  $$,
+  '23503',
+  'One or more requested trainers do not exist.',
+  'invalid trainer input is rejected'
+);
+
+select is(
+  (
+    select count(*)
+    from public.group_trainers
+    where group_id = '20000000-0000-4000-8000-000000000001'
+  ),
+  1::bigint,
+  'failed group trainer reconciliation leaves previous assignments intact'
+);
+
+select throws_ok(
+  $$
+    select public.reconcile_group_trainers(
+      '20000000-0000-4000-8000-000000000001',
+      array['10000000-0000-4000-8000-000000000002']::uuid[],
+      '10000000-0000-4000-8000-000000000003'
+    )
+  $$,
+  '22023',
+  'The primary trainer must be assigned to the group.',
+  'primary trainer must be in the selected trainer set'
+);
+
+select lives_ok(
+  $$
+    select public.reconcile_group_trainers(
+      '20000000-0000-4000-8000-000000000001',
+      array[
+        '10000000-0000-4000-8000-000000000002',
+        '10000000-0000-4000-8000-000000000002',
+        '10000000-0000-4000-8000-000000000003'
+      ]::uuid[],
+      '10000000-0000-4000-8000-000000000003'
+    )
+  $$,
+  'active admin can reconcile group trainers'
+);
+
+select is(
+  (
+    select count(*)
+    from public.group_trainers
+    where group_id = '20000000-0000-4000-8000-000000000001'
+  ),
+  2::bigint,
+  'group trainer reconciliation creates the exact unique trainer set'
+);
+
+select is(
+  (
+    select count(*)
+    from public.group_trainers
+    where group_id = '20000000-0000-4000-8000-000000000001'
+      and is_primary
+  ),
+  1::bigint,
+  'group trainer reconciliation results in at most one primary trainer'
+);
+
+select is(
+  (
+    select trainer_id
+    from public.group_trainers
+    where group_id = '20000000-0000-4000-8000-000000000001'
+      and is_primary
+  ),
+  '10000000-0000-4000-8000-000000000003'::uuid,
+  'requested trainer is set as primary'
+);
+
+select lives_ok(
+  $$
+    select public.reconcile_student_groups(
+      '30000000-0000-4000-8000-000000000001',
+      array[
+        '20000000-0000-4000-8000-000000000001',
+        '20000000-0000-4000-8000-000000000001',
+        '20000000-0000-4000-8000-000000000002'
+      ]::uuid[]
+    )
+  $$,
+  'active admin can reconcile student groups'
+);
+
+select is(
+  (
+    select joined_on
+    from public.student_groups
+    where student_id = '30000000-0000-4000-8000-000000000001'
+      and group_id = '20000000-0000-4000-8000-000000000001'
+  ),
+  date '2025-01-15',
+  'retained student membership preserves joined_on'
+);
+
+select is(
+  (
+    select count(*)
+    from public.student_groups
+    where student_id = '30000000-0000-4000-8000-000000000001'
+  ),
+  2::bigint,
+  'duplicate requested group IDs cannot create duplicate memberships'
+);
+
+select lives_ok(
+  $$
+    select public.reconcile_student_groups(
+      '30000000-0000-4000-8000-000000000002',
+      '{}'::uuid[]
+    )
+  $$,
+  'active admin can remove current student memberships'
+);
+
+select is(
+  (
+    select count(*)
+    from public.student_groups
+    where student_id = '30000000-0000-4000-8000-000000000002'
+  ),
+  0::bigint,
+  'removed student membership is deleted'
+);
+
+select throws_ok(
+  $$
+    select public.reconcile_student_groups(
+      '30000000-0000-4000-8000-000000000001',
+      array[
+        '20000000-0000-4000-8000-000000000001',
+        '90000000-0000-4000-8000-000000000002'
+      ]::uuid[]
+    )
+  $$,
+  '23503',
+  'One or more requested groups do not exist.',
+  'invalid group input is rejected'
+);
+
+select is(
+  (
+    select count(*)
+    from public.student_groups
+    where student_id = '30000000-0000-4000-8000-000000000001'
+  ),
+  2::bigint,
+  'failed student group reconciliation leaves previous memberships intact'
 );
 
 select * from finish();

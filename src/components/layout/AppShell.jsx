@@ -10,12 +10,20 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
+import { useAuth } from '../../features/auth/AuthContext'
+
 const navigationItems = [
   { icon: LayoutDashboard, label: 'Home', to: '/app' },
   { icon: CalendarDays, label: 'Calendar', to: '/app/calendar' },
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
   { icon: MoreHorizontal, label: 'More', to: '/app/more' },
+]
+
+const administrationItems = [
+  { icon: UserRound, label: 'Trainers', to: '/app/trainers' },
+  { icon: LayoutDashboard, label: 'Rooms', to: '/app/rooms' },
+  { icon: Users, label: 'Users', to: '/app/users' },
 ]
 
 function Brand() {
@@ -31,9 +39,14 @@ function Brand() {
 }
 
 function Navigation({ variant }) {
+  const { profile } = useAuth()
+  const items = variant === 'sidebar' && profile?.role === 'admin'
+    ? [...navigationItems, ...administrationItems]
+    : navigationItems
+
   return (
     <nav aria-label="Primary navigation" className={`navigation navigation--${variant}`}>
-      {navigationItems.map(({ icon: Icon, label, to }) => (
+      {items.map(({ icon: Icon, label, to }) => (
         <NavLink
           className={({ isActive }) =>
             `navigation__link${isActive ? ' navigation__link--active' : ''}`

@@ -495,6 +495,112 @@ a:focus-visible {
   margin-top: 0;
 }
 
+.entity-list,
+.more-links {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.entity-row,
+.detail-card {
+  padding: var(--space-5);
+}
+
+.entity-row {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.entity-row h3,
+.detail-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.entity-row p,
+.detail-card > p,
+.more-links p {
+  margin: var(--space-2) 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.entity-row__actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.entity-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.field__textarea {
+  min-height: 96px;
+  padding-top: var(--space-3);
+  resize: vertical;
+}
+
+.form-error {
+  margin: 0;
+  color: #ff8e8e;
+  font-size: 0.875rem;
+}
+
+.assignment-list {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.assignment-list legend {
+  padding: 0 var(--space-1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.assignment-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.detail-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+
+.detail-list div {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: var(--space-3);
+}
+
+.detail-list dt {
+  color: var(--color-text-muted);
+}
+
+.detail-list dd {
+  margin: 0;
+}
+
+.back-link,
+.more-links a {
+  color: var(--color-primary-light);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.more-links .card {
+  padding: var(--space-5);
+}
+
 @media (min-width: 900px) {
   .app-shell {
     display: grid;
@@ -585,6 +691,11 @@ a:focus-visible {
   }
 
   .user-row {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .entity-row {
     grid-template-columns: 1fr auto;
     align-items: center;
   }
