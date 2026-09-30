@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Milestone 3 — Complete (remote migration and Edge Function deployment pending review)
+Milestone 3 — Complete
 
 ## Decisions
 
@@ -35,25 +35,26 @@ Milestone 3 — Complete (remote migration and Edge Function deployment pending 
 - Milestone 3: added `supabase/migrations/20260929231500_rls_and_secure_user_administration.sql` with private-schema active-user/admin/trainer authorization helpers, explicit helper-function privileges, authenticated table grants, and the approved RLS permission matrix.
 - Added RLS policies that limit trainers to their own trainer record, groups, group memberships, students, relevant schedules/competitions, assigned tasks, and attendance for their responsible classes. Inactive users cannot access operational data.
 - Added `supabase/functions/admin-users/index.ts` for server-verified administrator invitations, role changes, activation/deactivation, and account deletion.
+- Added `supabase/migrations/20260930195000_admin_users_service_role_profiles.sql`, granting the Edge Function's `service_role` only public-schema usage plus `profiles` SELECT and UPDATE access to `full_name`, `role`, and `active`.
 - Added the admin-only `/app/users` UI, with server-side Edge Function mutations and client-side route visibility as a UX complement to database/server authorization.
 - Added pgTAP authorization tests and admin-route denial coverage.
 
 ## Validation
 
 - `npm run lint` passes with two existing Fast Refresh advisory warnings for the auth context module.
-- `npm test` passes: 3 test files and 5 tests.
+- `npm test` passes: 3 test files and 6 tests.
 - `npm run build` passes. Vite reports its standard advisory that the current production JavaScript chunk exceeds 500 kB.
 - Manual password-reset smoke test passed: forgot-password requests send an email, reset links reach `/reset-password`, and users can set a new password successfully.
 - `npx supabase db lint --local` passes with no schema errors.
-- `npx supabase test db --local supabase/tests/rls_policies.sql` passes all 9 pgTAP RLS cases.
+- `npx supabase test db --local supabase/tests/rls_policies.sql` passes all 15 pgTAP RLS and privilege cases.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
+- Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
 
 ## Known limitations
 
 - The initial profile trigger assigns the safe `trainer` role. The first administrator must be promoted manually as documented.
-- The Milestone 3 migration and `admin-users` Edge Function have not been applied or deployed to the remote project pending review.
 - The Edge Function requires Supabase-managed `SUPABASE_URL` and `SUPABASE_SECRET_KEYS`. Secret keys must remain server-side and must never be configured as a `VITE_*` value.
 
 ## Next milestone
 
-Review and manually deploy Milestone 3, including `supabase db push` and `supabase functions deploy admin-users`; retain Edge Function JWT verification, the private helper schema outside Data API schemas, the `SUPABASE_SECRET_KEYS` secret configuration, and public email-signup disablement. Milestone 4 — Trainers, Rooms, Groups, and Students remains pending and has not been started.
+Milestone 4 — Trainers, Rooms, Groups, and Students remains pending and has not been started.
