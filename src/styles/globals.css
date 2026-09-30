@@ -450,6 +450,51 @@ a:focus-visible {
   }
 }
 
+.users-card,
+.user-row {
+  padding: var(--space-5);
+}
+
+.users-card h3,
+.user-row h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.users-invite-form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.users-error {
+  margin: var(--space-4) 0;
+  color: #ff8e8e;
+}
+
+.users-list {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.user-row {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.user-row__badges,
+.user-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.user-row__actions {
+  margin-top: 0;
+}
+
 @media (min-width: 900px) {
   .app-shell {
     display: grid;
@@ -537,5 +582,10 @@ a:focus-visible {
 
   .navigation--bottom {
     display: none;
+  }
+
+  .user-row {
+    grid-template-columns: 1fr auto;
+    align-items: center;
   }
 }

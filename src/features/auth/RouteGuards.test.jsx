@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { AuthContext } from './AuthContext'
-import { ProtectedRoute, PublicOnlyRoute } from './RouteGuards'
+import { AdminRoute, ProtectedRoute, PublicOnlyRoute } from './RouteGuards'
 
 afterEach(cleanup)
 
@@ -67,5 +67,21 @@ describe('route guards', () => {
     ))
 
     expect(screen.getByText('Protected dashboard')).toBeInTheDocument()
+  })
+
+  it('denies non-admin users access to user administration routes', () => {
+    renderWithAuth('/app/users', {
+      isLoading: false,
+      profile: { active: true, full_name: 'Alex Trainer', role: 'trainer' },
+      profileError: null,
+      session: { user: { id: 'trainer-id' } },
+    }, (
+      <Route element={<AdminRoute />}>
+        <Route element={<p>Users page</p>} path="/app/users" />
+      </Route>
+    ))
+
+    expect(screen.getByRole('heading', { name: 'Administrator access required' })).toBeInTheDocument()
+    expect(screen.queryByText('Users page')).not.toBeInTheDocument()
   })
 })
