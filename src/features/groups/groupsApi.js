@@ -14,10 +14,34 @@ function throwOnError(error, message) {
   }
 }
 
+function requireGroupId(id) {
+  if (typeof id !== 'string' || id.trim() === '') {
+    throw new Error('A valid group ID is required to update a group.')
+  }
+}
+
 const groupFields = 'id, name, category, level, default_room_id, description, active, created_at, updated_at'
+const groupListFields = `
+  id,
+  name,
+  category,
+  level,
+  default_room_id,
+  description,
+  active,
+  default_room:rooms(name),
+  group_trainers(is_primary, trainer:trainers(first_name, last_name)),
+  student_groups(student:students(status))
+`
 
 export async function listGroups() {
   const { data, error } = await client().from('groups').select(groupFields).order('name')
+  throwOnError(error, 'Unable to load groups.')
+  return data
+}
+
+export async function listGroupsWithDetails() {
+  const { data, error } = await client().from('groups').select(groupListFields).order('name')
   throwOnError(error, 'Unable to load groups.')
   return data
 }
@@ -35,6 +59,7 @@ export async function createGroup(values) {
 }
 
 export async function updateGroup({ id, values }) {
+  requireGroupId(id)
   const { error } = await client().from('groups').update(values).eq('id', id)
   throwOnError(error, 'Unable to update the group. Group names must be unique.')
 }

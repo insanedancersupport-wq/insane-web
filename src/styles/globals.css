@@ -502,6 +502,18 @@ a:focus-visible {
   margin-top: var(--space-5);
 }
 
+.list-filters {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.success-message {
+  margin: var(--space-4) 0 0;
+  color: var(--color-success);
+  font-size: 0.875rem;
+}
+
 .entity-row,
 .detail-card {
   padding: var(--space-5);
@@ -568,6 +580,24 @@ a:focus-visible {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.assigned-trainer-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assigned-trainer-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
 }
 
 .detail-list {
@@ -698,5 +728,9 @@ a:focus-visible {
   .entity-row {
     grid-template-columns: 1fr auto;
     align-items: center;
+  }
+
+  .list-filters {
+    grid-template-columns: repeat(2, minmax(0, 240px));
   }
 }

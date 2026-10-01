@@ -45,17 +45,25 @@ Milestone 4 — Complete
 - Added `supabase/migrations/20260930203000_atomic_membership_reconciliation.sql` with admin-only, `SECURITY DEFINER` public RPCs for atomic group-trainer and student-group exact-set reconciliation. Both functions have an empty `search_path`, use schema-qualified relations, call `private.is_admin()`, validate referenced records, and execute atomically.
 - Added pgTAP coverage for membership reconciliation authorization, invalid references, primary-trainer validation, rollback behavior, exact-set results, preserved `joined_on`, and removal of current student memberships.
 - Added focused frontend API tests verifying that group-trainer and student-group changes invoke their respective reconciliation RPCs.
+- Completed the Milestone 4 group-list requirements: cards show assigned trainers, identify the primary trainer, show the default room, and derive active student counts from `student_groups` and `students` without storing a duplicate count.
+- Completed the Milestone 4 student-list requirements: cards show current group memberships and support combined status/group filtering.
+- Added permanent Student deletion for administrators from Student details. It requires typing `DELETE`, explains related database cascade effects, invalidates relevant queries, and returns to the list with success feedback.
+- Updated Trainer profile linking so active and inactive application profiles of either `admin` or `trainer` role can be linked, while the existing unique `profile_id` constraint and `ON DELETE SET NULL` relationship remain authoritative.
+- Added actionable feedback for Group and Student saves where scalar data succeeds but subsequent relationship reconciliation fails. The UI does not report full success, refreshes the affected entity data, and directs the administrator to retry assignment through Edit.
 
 ## Validation
 
 - `npm run lint` passes with two existing Fast Refresh advisory warnings for the auth context module.
-- `npm test` passes: 5 test files and 8 tests.
+- `npm test` passes: 11 test files and 28 tests.
 - `npm run build` passes. Vite reports its standard advisory that the current production JavaScript chunk exceeds 500 kB.
 - Manual password-reset smoke test passed: forgot-password requests send an email, reset links reach `/reset-password`, and users can set a new password successfully.
 - `npx supabase db lint --local` passes with no schema errors.
 - `npx supabase test db --local supabase/tests/rls_policies.sql` passes all 31 pgTAP RLS, privilege, and relationship-reconciliation cases.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
 - Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
+- Remote Milestone 4 smoke test passed: Trainers support create/edit, activation changes, optional profile linking, and profile unlinking on User deletion; Rooms support CRUD and activation changes; Groups support default rooms, multiple trainers, primary-trainer changes, and persisted RPC reconciliation; Students support multiple current memberships, membership removal, and current-group details.
+- Final Milestone 4 RLS smoke test passed: a trainer linked only to CataGroup sees only CataGroup and its allowed students, cannot see unrelated groups/students, and does not see Trainers, Rooms, or Users navigation. Existing admin-only user-route denial remains confirmed.
+- Remote migration status: `20260930203000_atomic_membership_reconciliation.sql` is operating in the cloud project as confirmed by the successful remote `reconcile_group_trainers` and `reconcile_student_groups` smoke tests. No migration was created for the final Milestone 4 fixes.
 
 ## Known limitations
 

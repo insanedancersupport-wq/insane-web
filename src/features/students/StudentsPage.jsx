@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { z } from 'zod'
 
 import { AppShell } from '../../components/layout/AppShell'
@@ -15,7 +15,14 @@ import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
-import { createStudent, listStudents, updateStudent } from './studentsApi'
+import { listGroups } from '../groups/groupsApi'
+import {
+  createStudent,
+  listStudentGroups,
+  listStudentsWithGroups,
+  reconcileStudentGroups,
+  updateStudent,
+} from './studentsApi'
 
 const studentSchema = z.object({
   birth_date: z.string(),
@@ -37,18 +44,34 @@ const emptyStudent = {
   status: 'active',
 }
 
-function StudentForm({ onCancel, onSubmit, saving, student }) {
+function StudentForm({ groups, memberships, onCancel, onSubmit, saving, student }) {
   const { formState: { errors }, handleSubmit, register } = useForm({
     defaultValues: student
       ? { ...student, birth_date: student.birth_date ?? '' }
       : emptyStudent,
     resolver: zodResolver(studentSchema),
   })
+  const [selectedGroupIds, setSelectedGroupIds] = useState([])
+
+  useEffect(() => {
+    setSelectedGroupIds(memberships.map((membership) => membership.group_id))
+  }, [memberships, student?.id])
+
+  function toggleGroup(groupId) {
+    setSelectedGroupIds((current) => (
+      current.includes(groupId)
+        ? current.filter((id) => id !== groupId)
+        : [...current, groupId]
+    ))
+  }
 
   return (
     <form className="entity-form" onSubmit={handleSubmit((values) => onSubmit({
-      ...values,
-      birth_date: values.birth_date || null,
+      groupIds: selectedGroupIds,
+      values: {
+        ...values,
+        birth_date: values.birth_date || null,
+      },
     }))}>
       <Input label="First name" {...register('first_name')} />
       {errors.first_name && <p className="form-error" role="alert">{errors.first_name.message}</p>}
@@ -70,6 +93,19 @@ function StudentForm({ onCancel, onSubmit, saving, student }) {
         <span className="field__label">Notes</span>
         <textarea className="field__input field__textarea" id="student-notes" {...register('notes')} />
       </label>
+      <fieldset className="assignment-list">
+        <legend>Current groups</legend>
+        {groups.filter((group) => group.active).map((group) => (
+          <label className="assignment-option" key={group.id}>
+            <input
+              checked={selectedGroupIds.includes(group.id)}
+              onChange={() => toggleGroup(group.id)}
+              type="checkbox"
+            />
+            {group.name}
+          </label>
+        ))}
+      </fieldset>
       <div className="form-actions">
         <Button disabled={saving} type="submit">{saving ? 'Saving...' : 'Save student'}</Button>
         <Button disabled={saving} onClick={onCancel} variant="tertiary">Cancel</Button>
@@ -80,29 +116,80 @@ function StudentForm({ onCancel, onSubmit, saving, student }) {
 
 export function StudentsPage() {
   const { profile } = useAuth()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const [editingStudent, setEditingStudent] = useState(null)
   const [error, setError] = useState('')
-  const studentsQuery = useQuery({ queryKey: ['students'], queryFn: listStudents })
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [groupFilter, setGroupFilter] = useState('all')
+  const studentsQuery = useQuery({ queryKey: ['students-with-groups'], queryFn: listStudentsWithGroups })
+  const groupsQuery = useQuery({ queryKey: ['groups'], queryFn: listGroups })
+  const membershipsQuery = useQuery({
+    enabled: Boolean(editingStudent?.id),
+    queryKey: ['student-groups', editingStudent?.id],
+    queryFn: () => listStudentGroups(editingStudent.id),
+  })
   const mutation = useMutation({
-    mutationFn: (values) => (editingStudent?.id
-      ? updateStudent({ id: editingStudent.id, values })
-      : createStudent(values)),
-    onSuccess: () => {
+    mutationFn: async ({ groupIds, values }) => {
+      let studentId
+      let scalarSaveCompleted = false
+
+      try {
+        studentId = editingStudent?.id
+          ? editingStudent.id
+          : (await createStudent(values)).id
+
+        if (editingStudent?.id) {
+          await updateStudent({ id: studentId, values })
+        }
+
+        scalarSaveCompleted = true
+        await reconcileStudentGroups({ groupIds, studentId })
+        return studentId
+      } catch (saveError) {
+        if (scalarSaveCompleted) {
+          const reconciliationError = new Error(
+            'Student details were saved, but group memberships could not be saved. Edit the student to retry the memberships.',
+          )
+          reconciliationError.entitySaved = true
+          throw reconciliationError
+        }
+
+        throw saveError
+      }
+    },
+    onSuccess: (studentId) => {
       queryClient.invalidateQueries({ queryKey: ['students'] })
+      queryClient.invalidateQueries({ queryKey: ['students-with-groups'] })
+      queryClient.invalidateQueries({ queryKey: ['student-groups', studentId] })
+      queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
       setEditingStudent(null)
     },
   })
-  const isAdmin = profile.role === 'admin'
 
   async function saveStudent(values) {
     setError('')
     try {
       await mutation.mutateAsync(values)
     } catch (saveError) {
+      if (saveError.entitySaved) {
+        await queryClient.invalidateQueries({ queryKey: ['students'] })
+        await queryClient.invalidateQueries({ queryKey: ['students-with-groups'] })
+        await queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
+        setEditingStudent(null)
+      }
       setError(saveError.message)
     }
   }
+
+  const filteredStudents = studentsQuery.data?.filter((student) => {
+    const matchesStatus = statusFilter === 'all' || student.status === statusFilter
+    const matchesGroup = groupFilter === 'all'
+      || student.student_groups?.some((membership) => membership.group?.id === groupFilter)
+
+    return matchesStatus && matchesGroup
+  }) ?? []
+  const isAdmin = profile.role === 'admin'
 
   return (
     <AppShell title="Students">
@@ -112,16 +199,57 @@ export function StudentsPage() {
         <p>{isAdmin ? 'Maintain student records and current group memberships.' : 'View students in your assigned groups.'}</p>
       </section>
       {isAdmin && <Button onClick={() => setEditingStudent({})}>Add student</Button>}
+      {location.state?.message && <p className="success-message" role="status">{location.state.message}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
       {studentsQuery.isLoading && <LoadingState label="Loading students" />}
       {studentsQuery.error && <ErrorState title="Unable to load students" />}
       {studentsQuery.data?.length === 0 && <EmptyState description="No students are available to your account." title="No students yet" />}
+      {studentsQuery.data?.length > 0 && (
+        <section aria-label="Student filters" className="list-filters">
+          <label className="field" htmlFor="student-status-filter">
+            <span className="field__label">Status</span>
+            <select
+              className="field__input"
+              id="student-status-filter"
+              onChange={(event) => setStatusFilter(event.target.value)}
+              value={statusFilter}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="trial">Trial</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
+          <label className="field" htmlFor="student-group-filter">
+            <span className="field__label">Group</span>
+            <select
+              className="field__input"
+              id="student-group-filter"
+              onChange={(event) => setGroupFilter(event.target.value)}
+              value={groupFilter}
+            >
+              <option value="all">All groups</option>
+              {groupsQuery.data?.map((group) => (
+                <option key={group.id} value={group.id}>{group.name}</option>
+              ))}
+            </select>
+          </label>
+        </section>
+      )}
       <section aria-label="Students" className="entity-list">
-        {studentsQuery.data?.map((student) => (
+        {studentsQuery.data?.length > 0 && filteredStudents.length === 0 && (
+          <EmptyState description="Adjust the status or group filters to see students." title="No matching students" />
+        )}
+        {filteredStudents.map((student) => (
           <Card className="entity-row" key={student.id}>
             <div>
               <h3>{student.first_name} {student.last_name}</h3>
               <p>{student.email || student.phone || 'No contact details'}</p>
+              <p>
+                Groups: {student.student_groups?.map((membership) => membership.group?.name)
+                  .filter(Boolean)
+                  .join(', ') || 'No current groups'}
+              </p>
               <Badge tone={student.status === 'active' ? 'success' : student.status === 'trial' ? 'warning' : 'danger'}>
                 {student.status}
               </Badge>
@@ -139,12 +267,19 @@ export function StudentsPage() {
           open={editingStudent !== null}
           title={editingStudent?.id ? 'Edit student' : 'Add student'}
         >
-          <StudentForm
-            onCancel={() => setEditingStudent(null)}
-            onSubmit={saveStudent}
-            saving={mutation.isPending}
-            student={editingStudent?.id ? editingStudent : null}
-          />
+          {editingStudent?.id && membershipsQuery.isLoading && <LoadingState label="Loading group memberships" />}
+          {editingStudent?.id && membershipsQuery.error && <ErrorState title="Unable to load group memberships" />}
+          {groupsQuery.error && <ErrorState title="Unable to load groups" />}
+          {(!editingStudent?.id || membershipsQuery.data) && !groupsQuery.error && (
+            <StudentForm
+              groups={groupsQuery.data ?? []}
+              memberships={membershipsQuery.data ?? []}
+              onCancel={() => setEditingStudent(null)}
+              onSubmit={saveStudent}
+              saving={mutation.isPending}
+              student={editingStudent?.id ? editingStudent : null}
+            />
+          )}
         </Dialog>
       )}
     </AppShell>
