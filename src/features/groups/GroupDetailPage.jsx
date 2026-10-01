@@ -1,98 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
 import { AppShell } from '../../components/layout/AppShell'
 import { ErrorState } from '../../components/feedback/ErrorState'
 import { LoadingState } from '../../components/feedback/LoadingState'
 import { Badge } from '../../components/ui/Badge'
-import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { useAuth } from '../auth/AuthContext'
 import { listTrainers } from '../trainers/trainersApi'
-import { getGroup, listGroupTrainers, reconcileGroupTrainers } from './groupsApi'
-
-function TrainerAssignments({ assignments, groupId, trainers }) {
-  const queryClient = useQueryClient()
-  const [error, setError] = useState('')
-  const [selectedIds, setSelectedIds] = useState([])
-  const [primaryId, setPrimaryId] = useState('')
-  const mutation = useMutation({
-    mutationFn: reconcileGroupTrainers,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['group-trainers', groupId] }),
-  })
-
-  useEffect(() => {
-    setSelectedIds(assignments.map((assignment) => assignment.trainer_id))
-    setPrimaryId(assignments.find((assignment) => assignment.is_primary)?.trainer_id ?? '')
-  }, [assignments])
-
-  function toggleTrainer(trainerId) {
-    setSelectedIds((current) => {
-      const next = current.includes(trainerId)
-        ? current.filter((id) => id !== trainerId)
-        : [...current, trainerId]
-      if (!next.includes(primaryId)) {
-        setPrimaryId('')
-      }
-      return next
-    })
-  }
-
-  async function saveAssignments(event) {
-    event.preventDefault()
-    setError('')
-    try {
-      await mutation.mutateAsync({
-        groupId,
-        primaryTrainerId: primaryId,
-        trainerIds: selectedIds,
-      })
-    } catch (saveError) {
-      setError(saveError.message)
-    }
-  }
-
-  return (
-    <Card className="detail-card">
-      <h3>Trainer assignments</h3>
-      <p>Changes are reconciled in a single database transaction.</p>
-      <form className="entity-form" onSubmit={saveAssignments}>
-        <fieldset className="assignment-list">
-          <legend>Assigned trainers</legend>
-          {trainers.filter((trainer) => trainer.active).map((trainer) => (
-            <label className="assignment-option" key={trainer.id}>
-              <input
-                checked={selectedIds.includes(trainer.id)}
-                onChange={() => toggleTrainer(trainer.id)}
-                type="checkbox"
-              />
-              {trainer.first_name} {trainer.last_name}
-            </label>
-          ))}
-        </fieldset>
-        <label className="field" htmlFor="primary-trainer">
-          <span className="field__label">Primary trainer</span>
-          <select
-            className="field__input"
-            id="primary-trainer"
-            onChange={(event) => setPrimaryId(event.target.value)}
-            value={primaryId}
-          >
-            <option value="">No primary trainer</option>
-            {trainers.filter((trainer) => selectedIds.includes(trainer.id)).map((trainer) => (
-              <option key={trainer.id} value={trainer.id}>{trainer.first_name} {trainer.last_name}</option>
-            ))}
-          </select>
-        </label>
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <Button disabled={mutation.isPending} type="submit">
-          {mutation.isPending ? 'Saving assignments...' : 'Save trainer assignments'}
-        </Button>
-      </form>
-    </Card>
-  )
-}
+import { getGroup, listGroupTrainers } from './groupsApi'
+import { listRooms } from '../rooms/roomsApi'
 
 export function GroupDetailPage() {
   const { profile } = useAuth()
@@ -108,6 +25,7 @@ export function GroupDetailPage() {
     queryKey: ['trainers'],
     queryFn: listTrainers,
   })
+  const roomsQuery = useQuery({ queryKey: ['rooms'], queryFn: listRooms })
 
   if (groupQuery.isLoading) {
     return <AppShell title="Group"><LoadingState label="Loading group" /></AppShell>
@@ -119,6 +37,8 @@ export function GroupDetailPage() {
 
   const group = groupQuery.data
   const isAdmin = profile.role === 'admin'
+  const defaultRoom = roomsQuery.data?.find((room) => room.id === group.default_room_id)
+  const trainersById = new Map(trainersQuery.data?.map((trainer) => [trainer.id, trainer]))
 
   return (
     <AppShell title="Group details">
@@ -133,6 +53,7 @@ export function GroupDetailPage() {
         <dl className="detail-list">
           <div><dt>Category</dt><dd>{group.category || 'Not set'}</dd></div>
           <div><dt>Level</dt><dd>{group.level || 'Not set'}</dd></div>
+          <div><dt>Default room</dt><dd>{defaultRoom?.name || 'Not set'}</dd></div>
           <div><dt>Status</dt><dd><Badge tone={group.active ? 'success' : 'danger'}>{group.active ? 'Active' : 'Inactive'}</Badge></dd></div>
         </dl>
       </Card>
@@ -140,7 +61,24 @@ export function GroupDetailPage() {
       {isAdmin && assignmentsQuery.error && <ErrorState title="Unable to load trainer assignments" />}
       {isAdmin && trainersQuery.error && <ErrorState title="Unable to load trainers" />}
       {isAdmin && assignmentsQuery.data && trainersQuery.data && (
-        <TrainerAssignments assignments={assignmentsQuery.data} groupId={groupId} trainers={trainersQuery.data} />
+        <Card className="detail-card">
+          <h3>Assigned trainers</h3>
+          {assignmentsQuery.data.length === 0 ? (
+            <p>No trainers are assigned to this group.</p>
+          ) : (
+            <ul className="assigned-trainer-list">
+              {assignmentsQuery.data.map((assignment) => {
+                const trainer = trainersById.get(assignment.trainer_id)
+                return (
+                  <li key={assignment.trainer_id}>
+                    <span>{trainer ? `${trainer.first_name} ${trainer.last_name}` : 'Unavailable trainer'}</span>
+                    {assignment.is_primary && <Badge tone="warning">Primary trainer</Badge>}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </Card>
       )}
     </AppShell>
   )

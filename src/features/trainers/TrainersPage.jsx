@@ -60,7 +60,7 @@ function TrainerForm({ onCancel, onSubmit, profiles, saving, trainer }) {
           <option value="">Not linked</option>
           {profiles.map((profile) => (
             <option key={profile.id} value={profile.id}>
-              {profile.full_name}{profile.active ? '' : ' (inactive)'}
+              {profile.full_name} ({profile.role}{profile.active ? '' : ', inactive'})
             </option>
           ))}
         </select>
@@ -84,7 +84,7 @@ export function TrainersPage() {
   const trainersQuery = useQuery({ queryKey: ['trainers'], queryFn: listTrainers })
   const profilesQuery = useQuery({ queryKey: ['trainer-profiles'], queryFn: listAvailableProfiles })
   const mutation = useMutation({
-    mutationFn: (values) => (editingTrainer
+    mutationFn: (values) => (editingTrainer?.id
       ? updateTrainer({ id: editingTrainer.id, values })
       : createTrainer(values)),
     onSuccess: () => {

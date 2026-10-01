@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { AppShell } from '../../components/layout/AppShell'
 import { ErrorState } from '../../components/feedback/ErrorState'
@@ -8,81 +8,41 @@ import { LoadingState } from '../../components/feedback/LoadingState'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Dialog } from '../../components/ui/Dialog'
+import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
 import { listGroups } from '../groups/groupsApi'
-import { getStudent, listStudentGroups, reconcileStudentGroups } from './studentsApi'
-
-function GroupMemberships({ groups, memberships, studentId }) {
-  const queryClient = useQueryClient()
-  const [error, setError] = useState('')
-  const [selectedIds, setSelectedIds] = useState([])
-  const mutation = useMutation({
-    mutationFn: reconcileStudentGroups,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['student-groups', studentId] }),
-  })
-
-  useEffect(() => {
-    setSelectedIds(memberships.map((membership) => membership.group_id))
-  }, [memberships])
-
-  function toggleGroup(groupId) {
-    setSelectedIds((current) => (
-      current.includes(groupId)
-        ? current.filter((id) => id !== groupId)
-        : [...current, groupId]
-    ))
-  }
-
-  async function saveMemberships(event) {
-    event.preventDefault()
-    setError('')
-    try {
-      await mutation.mutateAsync({ groupIds: selectedIds, studentId })
-    } catch (saveError) {
-      setError(saveError.message)
-    }
-  }
-
-  return (
-    <Card className="detail-card">
-      <h3>Current group memberships</h3>
-      <p>Removing a group deletes the current membership. Historical membership is not recorded here.</p>
-      <form className="entity-form" onSubmit={saveMemberships}>
-        <fieldset className="assignment-list">
-          <legend>Groups</legend>
-          {groups.filter((group) => group.active).map((group) => (
-            <label className="assignment-option" key={group.id}>
-              <input
-                checked={selectedIds.includes(group.id)}
-                onChange={() => toggleGroup(group.id)}
-                type="checkbox"
-              />
-              {group.name}
-            </label>
-          ))}
-        </fieldset>
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <Button disabled={mutation.isPending} type="submit">
-          {mutation.isPending ? 'Saving memberships...' : 'Save group memberships'}
-        </Button>
-      </form>
-    </Card>
-  )
-}
+import { deleteStudent, getStudent, listStudentGroups } from './studentsApi'
 
 export function StudentDetailPage() {
   const { profile } = useAuth()
+  const navigate = useNavigate()
   const { studentId } = useParams()
+  const queryClient = useQueryClient()
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const studentQuery = useQuery({ queryKey: ['students', studentId], queryFn: () => getStudent(studentId) })
   const membershipsQuery = useQuery({
-    enabled: profile.role === 'admin',
     queryKey: ['student-groups', studentId],
     queryFn: () => listStudentGroups(studentId),
   })
   const groupsQuery = useQuery({
-    enabled: profile.role === 'admin',
     queryKey: ['groups'],
     queryFn: listGroups,
+  })
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteStudent(studentId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['students'] }),
+        queryClient.invalidateQueries({ queryKey: ['students-with-groups'] }),
+        queryClient.invalidateQueries({ queryKey: ['student-groups', studentId] }),
+        queryClient.invalidateQueries({ queryKey: ['groups-with-details'] }),
+      ])
+      navigate('/app/students', {
+        state: { message: 'Student permanently deleted.' },
+      })
+    },
   })
 
   if (studentQuery.isLoading) {
@@ -94,7 +54,22 @@ export function StudentDetailPage() {
   }
 
   const student = studentQuery.data
+  const groupsById = new Map(groupsQuery.data?.map((group) => [group.id, group]))
   const isAdmin = profile.role === 'admin'
+
+  function closeDeleteDialog() {
+    if (!deleteMutation.isPending) {
+      setDeleteDialogOpen(false)
+      setDeleteConfirmation('')
+    }
+  }
+
+  function confirmDelete(event) {
+    event.preventDefault()
+    if (deleteConfirmation === 'DELETE') {
+      deleteMutation.mutate()
+    }
+  }
 
   return (
     <AppShell title="Student details">
@@ -113,12 +88,53 @@ export function StudentDetailPage() {
           <div><dt>Birth date</dt><dd>{student.birth_date || 'Not set'}</dd></div>
         </dl>
       </Card>
-      {isAdmin && membershipsQuery.isLoading && <LoadingState label="Loading group memberships" />}
-      {isAdmin && membershipsQuery.error && <ErrorState title="Unable to load group memberships" />}
-      {isAdmin && groupsQuery.error && <ErrorState title="Unable to load groups" />}
-      {isAdmin && membershipsQuery.data && groupsQuery.data && (
-        <GroupMemberships groups={groupsQuery.data} memberships={membershipsQuery.data} studentId={studentId} />
+      {isAdmin && (
+        <Card className="detail-card">
+          <h3>Permanent deletion</h3>
+          <p>Delete this student only when the record must be permanently removed.</p>
+          <Button onClick={() => setDeleteDialogOpen(true)} variant="tertiary">Permanently delete student</Button>
+        </Card>
       )}
+      {membershipsQuery.isLoading && <LoadingState label="Loading group memberships" />}
+      {membershipsQuery.error && <ErrorState title="Unable to load group memberships" />}
+      {groupsQuery.error && <ErrorState title="Unable to load groups" />}
+      {membershipsQuery.data && groupsQuery.data && (
+        <Card className="detail-card">
+          <h3>Current groups</h3>
+          {membershipsQuery.data.length === 0 ? (
+            <p>This student is not assigned to any groups.</p>
+          ) : (
+            <ul className="assigned-trainer-list">
+              {membershipsQuery.data.map((membership) => (
+                <li key={membership.group_id}>{groupsById.get(membership.group_id)?.name || 'Unavailable group'}</li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+      <Dialog
+        onClose={closeDeleteDialog}
+        open={deleteDialogOpen}
+        title="Permanently delete student"
+      >
+        <form className="entity-form" onSubmit={confirmDelete}>
+          <p className="form-error">
+            This cannot be undone. Related memberships and attendance records affected by database cascade rules may also be permanently removed.
+          </p>
+          <Input
+            label='Type DELETE to confirm'
+            onChange={(event) => setDeleteConfirmation(event.target.value)}
+            value={deleteConfirmation}
+          />
+          {deleteMutation.error && <p className="form-error" role="alert">{deleteMutation.error.message}</p>}
+          <div className="form-actions">
+            <Button disabled={deleteConfirmation !== 'DELETE' || deleteMutation.isPending} type="submit">
+              {deleteMutation.isPending ? 'Deleting...' : 'Permanently delete'}
+            </Button>
+            <Button disabled={deleteMutation.isPending} onClick={closeDeleteDialog} variant="tertiary">Cancel</Button>
+          </div>
+        </form>
+      </Dialog>
     </AppShell>
   )
 }

@@ -4,7 +4,7 @@ import { reconcileStudentGroups } from './studentsApi'
 import { supabase } from '../../services/supabaseClient'
 
 vi.mock('../../services/supabaseClient', () => ({
-  supabase: { rpc: vi.fn() },
+  supabase: { from: vi.fn(), rpc: vi.fn() },
 }))
 
 describe('reconcileStudentGroups', () => {
@@ -22,5 +22,6 @@ describe('reconcileStudentGroups', () => {
       selected_group_ids: ['group-a', 'group-b'],
       target_student_id: 'student-id',
     })
+    expect(supabase.from).not.toHaveBeenCalled()
   })
 })
