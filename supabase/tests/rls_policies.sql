@@ -70,6 +70,11 @@ values
   ('20000000-0000-4000-8000-000000000001', 'Trainer One Group'),
   ('20000000-0000-4000-8000-000000000002', 'Trainer Two Group');
 
+insert into public.rooms (id, name)
+values
+  ('50000000-0000-4000-8000-000000000001', 'Trainer One Room'),
+  ('50000000-0000-4000-8000-000000000002', 'Trainer Two Room');
+
 insert into public.group_trainers (group_id, trainer_id)
 values
   ('20000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000002'),
@@ -85,7 +90,7 @@ values
   ('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', date '2025-01-15'),
   ('30000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000002', null);
 
-insert into public.schedule_entries (id, title, entry_type, group_id, trainer_id, starts_at, ends_at)
+insert into public.schedule_entries (id, title, entry_type, group_id, trainer_id, room_id, starts_at, ends_at)
 values
   (
     '40000000-0000-4000-8000-000000000001',
@@ -93,8 +98,9 @@ values
     'class',
     '20000000-0000-4000-8000-000000000001',
     '10000000-0000-4000-8000-000000000002',
-    now(),
-    now() + interval '1 hour'
+    '50000000-0000-4000-8000-000000000001',
+    '2026-01-12 16:00:00+00',
+    '2026-01-12 17:00:00+00'
   ),
   (
     '40000000-0000-4000-8000-000000000002',
@@ -102,8 +108,9 @@ values
     'class',
     '20000000-0000-4000-8000-000000000002',
     '10000000-0000-4000-8000-000000000003',
-    now(),
-    now() + interval '1 hour'
+    '50000000-0000-4000-8000-000000000002',
+    '2026-01-12 16:00:00+00',
+    '2026-01-12 17:00:00+00'
   );
 
 insert into public.attendance_records (schedule_entry_id, student_id, status, marked_by)

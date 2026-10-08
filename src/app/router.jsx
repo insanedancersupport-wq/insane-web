@@ -15,6 +15,7 @@ import { GroupsPage } from '../features/groups/GroupsPage'
 import { GroupDetailPage } from '../features/groups/GroupDetailPage'
 import { StudentsPage } from '../features/students/StudentsPage'
 import { StudentDetailPage } from '../features/students/StudentDetailPage'
+import { CalendarPage } from '../features/calendar/CalendarPage'
 
 export const router = createBrowserRouter([
   {
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: '/app/groups/:groupId', element: <GroupDetailPage /> },
           { path: '/app/students', element: <StudentsPage /> },
           { path: '/app/students/:studentId', element: <StudentDetailPage /> },
+          { path: '/app/calendar', element: <CalendarPage /> },
           { path: '/app/more', element: <MorePage /> },
           { path: '/app/*', element: <App /> },
         ],

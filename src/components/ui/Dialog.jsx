@@ -2,7 +2,7 @@ import { X } from 'lucide-react'
 
 import { Button } from './Button'
 
-export function Dialog({ children, onClose, open, title }) {
+export function Dialog({ children, footer, onClose, open, scrollable = false, title }) {
   if (!open) {
     return null
   }
@@ -12,7 +12,7 @@ export function Dialog({ children, onClose, open, title }) {
       <section
         aria-labelledby="dialog-title"
         aria-modal="true"
-        className="dialog"
+        className={`dialog${scrollable ? ' dialog--scrollable' : ''}`}
         role="dialog"
       >
         <header className="dialog__header">
@@ -26,7 +26,8 @@ export function Dialog({ children, onClose, open, title }) {
             <X aria-hidden="true" size={20} />
           </Button>
         </header>
-        <div className="dialog__body">{children}</div>
+        <div className={`dialog__body${scrollable ? ' dialog__body--scrollable' : ''}`}>{children}</div>
+        {footer && <footer className="dialog__footer">{footer}</footer>}
       </section>
     </div>
   )
