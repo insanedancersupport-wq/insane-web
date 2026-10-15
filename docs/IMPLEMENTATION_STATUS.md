@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Milestone 5 — Complete locally; remote migration review/apply pending
+Milestone 6 — Complete locally; remote migrations review/apply pending
 
 ## Decisions
 
@@ -24,6 +24,8 @@ Milestone 5 — Complete locally; remote migration review/apply pending
 - Calendar entry values that fall in DST spring-forward gaps or fall-back repeated intervals are rejected with actionable feedback. Schedule entries must begin and end on the same local school date.
 - Concrete `class` entries require a group, responsible trainer, and room through both frontend validation and the `schedule_entries_class_requires_references` database check. Other entry types may omit those relationships.
 - Room and trainer conflicts are enforced by distinct partial PostgreSQL exclusion constraints using half-open `tstzrange` intervals. Cancelled entries do not block slots; adjacent entries remain valid.
+- Attendance is linked only to concrete, started, non-cancelled `class` entries. Recovery is an eligible same-group attendance status and never creates cross-group relationships or compensates an earlier absence.
+- Attendance eligibility uses current group membership when a record is created. Persisted records remain visible and editable by the responsible trainer after later membership removal; historical unmarked membership cannot be inferred because membership history remains deferred.
 
 ## Completed work
 
@@ -61,6 +63,11 @@ Milestone 5 — Complete locally; remote migration review/apply pending
 - Added bounded Calendar range queries with trainer/group/room/type filters, relationship display joins, admin create/edit/cancel/delete controls, trainer read-only details, and cancelled-entry presentation.
 - Added admin weekly concrete-entry creation through the atomic `create_weekly_schedule_entries` RPC. The RPC uses `SECURITY DEFINER`, an empty `search_path`, schema-qualified references, `private.is_admin()`, the authoritative timezone, caller-derived `created_by`, input/reference validation, and explicit execution grants.
 - Added `supabase/migrations/20261001230500_protect_authoritative_school_settings.sql`. It replaces the school-settings admin `FOR ALL` policy with separate admin INSERT/UPDATE policies, leaves active-user reads intact, and uses private-schema triggers to enforce timezone validity, prevent timezone reinterpretation after schedules exist, and reject deletion of the singleton row.
+- Milestone 6: added `supabase/migrations/20261008221000_attendance_integrity_and_authorization.sql`, which validates attendance eligibility, prevents cross-group recovery, derives markers from the authenticated user, and protects attended class type/group/timing from later changes.
+- Added attendance RLS policies for admins and responsible trainers. Trainers can create attendance only for their started, non-cancelled classes and current group roster; they retain read/edit access to persisted records after membership removal.
+- Added concrete class attendance detail from Calendar, conflict-keyed batch upserts, and role-aware editing controls.
+- Added the responsive group/month attendance matrix with real non-cancelled class occurrences, historical-record rows, unmarked cells, derived present/absent/recovery/unmarked counts, and participation percentage.
+- Added attendance history links from group details and More navigation, plus focused frontend and pgTAP coverage.
 
 ## Validation
 
@@ -72,7 +79,8 @@ Milestone 5 — Complete locally; remote migration review/apply pending
 - `npx supabase test db --local supabase/tests/rls_policies.sql` passes all 31 pgTAP RLS, privilege, and relationship-reconciliation cases.
 - `npx supabase test db --local supabase/tests/schedule_conflicts.sql` passes all 29 pgTAP calendar cases, including authoritative timezone handling, class completeness, overlap/re-adjacency behavior, cancellation/reactivation, DST invalid-time rejection, RLS-protected bulk creation, and batch rollback.
 - `npx supabase test db --local supabase/tests/school_settings_lifecycle.sql` passes all 14 pgTAP settings-lifecycle cases, including RLS and trigger delete protection, singleton enforcement, future timezone validation, timezone locking, and continued schedule writes.
-- Milestone 5 migrations `20261001223000_schedule_conflicts_and_weekly_creation.sql` and `20261001230500_protect_authoritative_school_settings.sql` have been applied and tested only in the local Supabase environment. Neither has been pushed or applied to the remote project.
+- Milestone 6 validation passes: `npm test` runs 17 files and 49 tests with one worker/no file parallelism; `npx supabase test db --local supabase/tests/attendance.sql` passes all 15 attendance integrity and authorization cases.
+- Milestone 5 migrations `20261001223000_schedule_conflicts_and_weekly_creation.sql` and `20261001230500_protect_authoritative_school_settings.sql`, and Milestone 6 migration `20261008221000_attendance_integrity_and_authorization.sql`, have been applied and tested only in the local Supabase environment. None has been pushed or applied to the remote project.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
 - Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
 - Remote Milestone 4 smoke test passed: Trainers support create/edit, activation changes, optional profile linking, and profile unlinking on User deletion; Rooms support CRUD and activation changes; Groups support default rooms, multiple trainers, primary-trainer changes, and persisted RPC reconciliation; Students support multiple current memberships, membership removal, and current-group details.
@@ -83,9 +91,9 @@ Milestone 5 — Complete locally; remote migration review/apply pending
 
 - The initial profile trigger assigns the safe `trainer` role. The first administrator must be promoted manually as documented.
 - The Edge Function requires Supabase-managed `SUPABASE_URL` and `SUPABASE_SECRET_KEYS`. Secret keys must remain server-side and must never be configured as a `VITE_*` value.
-- Group membership history and its use by attendance remain intentionally deferred to Milestone 6. The current UI manages only current memberships.
+- Group membership history remains intentionally deferred. Historical attendance preserves recorded rows after membership removal, but cannot reconstruct unmarked historical roster cells for removed students.
 - Before remote Milestone 5 use, review and apply both Milestone 5 migrations. The first intentionally stops if duplicate `school_settings`, incomplete existing classes, or existing non-cancelled room/trainer overlaps require manual correction; the second hardens the authoritative settings lifecycle required by Calendar.
 
 ## Next milestone
 
-Milestone 5 — Schedule and calendar management is complete locally. Milestone 6 has not started.
+Milestone 6 — Attendance is complete locally. Milestone 7 has not started.

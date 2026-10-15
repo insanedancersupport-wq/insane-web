@@ -96,6 +96,19 @@ describe('StudentsPage group memberships', () => {
     })
   })
 
+  it('uses a scrollable dialog body with fixed student form actions', async () => {
+    listStudentsWithGroups.mockResolvedValue([])
+    renderStudentsPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add student' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Add student' })
+    expect(dialog).toHaveClass('dialog--scrollable')
+    expect(dialog.querySelector('.dialog__body--scrollable form')).toHaveAttribute('id', 'student-form')
+    expect(dialog.querySelector('.dialog__footer')).toContainElement(screen.getByRole('button', { name: 'Save student' }))
+    expect(dialog.querySelector('.dialog__footer')).toContainElement(screen.getByRole('button', { name: 'Cancel' }))
+  })
+
   it('loads existing memberships and reconciles the exact set after a group is removed', async () => {
     listStudentsWithGroups.mockResolvedValue([{
       birth_date: null,

@@ -16,6 +16,8 @@ import { GroupDetailPage } from '../features/groups/GroupDetailPage'
 import { StudentsPage } from '../features/students/StudentsPage'
 import { StudentDetailPage } from '../features/students/StudentDetailPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
+import { AttendancePage } from '../features/attendance/AttendancePage'
+import { AttendanceMatrixPage } from '../features/attendance/AttendanceMatrixPage'
 
 export const router = createBrowserRouter([
   {
@@ -50,6 +52,8 @@ export const router = createBrowserRouter([
           { path: '/app/students', element: <StudentsPage /> },
           { path: '/app/students/:studentId', element: <StudentDetailPage /> },
           { path: '/app/calendar', element: <CalendarPage /> },
+          { path: '/app/attendance/entries/:scheduleEntryId', element: <AttendancePage /> },
+          { path: '/app/attendance', element: <AttendanceMatrixPage /> },
           { path: '/app/more', element: <MorePage /> },
           { path: '/app/*', element: <App /> },
         ],

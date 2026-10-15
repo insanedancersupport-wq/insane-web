@@ -797,6 +797,102 @@ a:focus-visible {
   gap: var(--space-1);
 }
 
+.attendance-roster {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.attendance-row {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.attendance-row h3 {
+  margin: 0 0 var(--space-2);
+}
+
+.attendance-actions {
+  margin-top: var(--space-5);
+}
+
+.attendance-statistics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+}
+
+.attendance-statistics .card {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.attendance-statistics span {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.attendance-matrix-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.attendance-matrix {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+}
+
+.attendance-matrix th,
+.attendance-matrix td {
+  min-width: 54px;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.attendance-matrix th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 150px;
+  background: var(--color-surface-elevated);
+  text-align: left;
+}
+
+.attendance-cell {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.attendance-cell--present { background: rgb(34 197 94 / 25%); color: var(--color-success); }
+.attendance-cell--absent { background: rgb(239 68 68 / 20%); color: #ff8e8e; }
+.attendance-cell--recovery { background: rgb(245 158 11 / 20%); color: var(--color-warning); }
+.attendance-cell--unmarked { background: var(--color-surface-elevated); color: var(--color-text-muted); }
+
+.attendance-matrix__date,
+.attendance-matrix__time {
+  display: block;
+  white-space: nowrap;
+}
+
+.attendance-matrix__time {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+}
+
 @media (min-width: 900px) {
   .app-shell {
     display: grid;
@@ -939,5 +1035,14 @@ a:focus-visible {
 
   .calendar-form-times {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .attendance-row {
+    grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.7fr) minmax(200px, 1fr);
+    align-items: end;
+  }
+
+  .attendance-statistics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }

@@ -57,6 +57,11 @@ export function GroupDetailPage() {
           <div><dt>Status</dt><dd><Badge tone={group.active ? 'success' : 'danger'}>{group.active ? 'Active' : 'Inactive'}</Badge></dd></div>
         </dl>
       </Card>
+      <Card className="detail-card">
+        <h3>Attendance history</h3>
+        <p>Review monthly attendance across concrete class occurrences.</p>
+        <Link className="button button--secondary" to={`/app/attendance?groupId=${groupId}`}>View attendance history</Link>
+      </Card>
       {isAdmin && assignmentsQuery.isLoading && <LoadingState label="Loading trainer assignments" />}
       {isAdmin && assignmentsQuery.error && <ErrorState title="Unable to load trainer assignments" />}
       {isAdmin && trainersQuery.error && <ErrorState title="Unable to load trainers" />}

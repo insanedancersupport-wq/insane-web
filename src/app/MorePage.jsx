@@ -23,6 +23,7 @@ export function MorePage() {
             <Card><Link to="/app/users">Users</Link><p>Invite and manage application accounts.</p></Card>
           </>
         )}
+        <Card><Link to="/app/attendance">Attendance</Link><p>Review monthly class attendance.</p></Card>
         <Card><Link to="/app/groups">Groups</Link><p>Review dance groups and assignments.</p></Card>
         <Card><Link to="/app/students">Students</Link><p>Review student records.</p></Card>
       </section>
