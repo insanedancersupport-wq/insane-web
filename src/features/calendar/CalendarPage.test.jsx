@@ -158,6 +158,32 @@ describe('CalendarPage', () => {
         rangeStart: expect.any(String),
       }))
     })
+
+  })
+
+  it('links an administrator from a started class to its attendance screen', async () => {
+    listScheduleEntries.mockResolvedValue([{
+      ends_at: '2026-10-08T16:00:00.000Z',
+      entry_type: 'class',
+      group: { name: 'Junior Crew' },
+      group_id: group.id,
+      id: 'entry-id',
+      room: { name: 'Studio A' },
+      room_id: room.id,
+      starts_at: '2026-10-08T15:00:00.000Z',
+      status: 'scheduled',
+      title: 'Evening class',
+      trainer: { first_name: 'Maya', last_name: 'Dance' },
+      trainer_id: trainer.id,
+    }])
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: /Evening class/i }))
+
+    expect(screen.getByRole('link', { name: 'Mark attendance' })).toHaveAttribute(
+      'href',
+      '/app/attendance/entries/entry-id',
+    )
   })
 
   it('rejects overnight entry times before sending a direct schedule write', async () => {

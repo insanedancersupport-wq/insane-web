@@ -44,7 +44,7 @@ const emptyStudent = {
   status: 'active',
 }
 
-function StudentForm({ groups, memberships, onCancel, onSubmit, saving, student }) {
+function StudentForm({ formId, groups, memberships, onSubmit, student }) {
   const { formState: { errors }, handleSubmit, register } = useForm({
     defaultValues: student
       ? { ...student, birth_date: student.birth_date ?? '' }
@@ -66,7 +66,7 @@ function StudentForm({ groups, memberships, onCancel, onSubmit, saving, student 
   }
 
   return (
-    <form className="entity-form" onSubmit={handleSubmit((values) => onSubmit({
+    <form className="entity-form" id={formId} onSubmit={handleSubmit((values) => onSubmit({
       groupIds: selectedGroupIds,
       values: {
         ...values,
@@ -106,10 +106,6 @@ function StudentForm({ groups, memberships, onCancel, onSubmit, saving, student 
           </label>
         ))}
       </fieldset>
-      <div className="form-actions">
-        <Button disabled={saving} type="submit">{saving ? 'Saving...' : 'Save student'}</Button>
-        <Button disabled={saving} onClick={onCancel} variant="tertiary">Cancel</Button>
-      </div>
     </form>
   )
 }
@@ -263,8 +259,17 @@ export function StudentsPage() {
       </section>
       {isAdmin && (
         <Dialog
+          footer={(
+            <div className="form-actions">
+              <Button disabled={mutation.isPending} form="student-form" type="submit">
+                {mutation.isPending ? 'Saving...' : 'Save student'}
+              </Button>
+              <Button disabled={mutation.isPending} onClick={() => setEditingStudent(null)} variant="tertiary">Cancel</Button>
+            </div>
+          )}
           onClose={() => !mutation.isPending && setEditingStudent(null)}
           open={editingStudent !== null}
+          scrollable
           title={editingStudent?.id ? 'Edit student' : 'Add student'}
         >
           {editingStudent?.id && membershipsQuery.isLoading && <LoadingState label="Loading group memberships" />}
@@ -272,11 +277,10 @@ export function StudentsPage() {
           {groupsQuery.error && <ErrorState title="Unable to load groups" />}
           {(!editingStudent?.id || membershipsQuery.data) && !groupsQuery.error && (
             <StudentForm
+              formId="student-form"
               groups={groupsQuery.data ?? []}
               memberships={membershipsQuery.data ?? []}
-              onCancel={() => setEditingStudent(null)}
               onSubmit={saveStudent}
-              saving={mutation.isPending}
               student={editingStudent?.id ? editingStudent : null}
             />
           )}

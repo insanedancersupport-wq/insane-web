@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -537,6 +538,7 @@ export function CalendarPage() {
   const selectableGroups = groupsQuery.data?.filter((group) => group.active) ?? []
   const selectableRooms = roomsQuery.data?.filter((room) => room.active) ?? []
   const selectableTrainers = trainersQuery.data?.filter((trainer) => trainer.active) ?? []
+  const ownTrainer = trainersQuery.data?.find((trainer) => trainer.profile_id === profile.id)
 
   return (
     <AppShell title="Calendar">
@@ -667,6 +669,14 @@ export function CalendarPage() {
                 <Button onClick={() => { setDeleteEntry(selectedEntry); setSelectedEntry(null) }} variant="tertiary">Delete permanently</Button>
               </div>
             )}
+            {(isAdmin || selectedEntry?.trainer_id === ownTrainer?.id)
+              && selectedEntry?.entry_type === 'class'
+              && selectedEntry.status !== 'cancelled'
+              && new Date(selectedEntry.starts_at) <= new Date() && (
+                <Link className="button button--primary" to={`/app/attendance/entries/${selectedEntry.id}`}>
+                  Mark attendance
+                </Link>
+              )}
             {cancelMutation.error && <p className="form-error" role="alert">{cancelMutation.error.message}</p>}
           </div>
         )}
