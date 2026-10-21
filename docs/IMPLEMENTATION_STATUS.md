@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Milestone 6 — Complete locally; remote migrations review/apply pending
+Milestone 7.1b — Tasks frontend complete locally; review pending
 
 ## Decisions
 
@@ -26,6 +26,8 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - Room and trainer conflicts are enforced by distinct partial PostgreSQL exclusion constraints using half-open `tstzrange` intervals. Cancelled entries do not block slots; adjacent entries remain valid.
 - Attendance is linked only to concrete, started, non-cancelled `class` entries. Recovery is an eligible same-group attendance status and never creates cross-group relationships or compensates an earlier absence.
 - Attendance eligibility uses current group membership when a record is created. Persisted records remain visible and editable by the responsible trainer after later membership removal; historical unmarked membership cannot be inferred because membership history remains deferred.
+- Tasks reference profile IDs, not trainer IDs. Active admins can manage every task; trainer row and field permissions are enforced by Tasks RLS plus a database trigger.
+- Task due-date calculations and overdue display use the authoritative school timezone rather than browser-local time.
 
 ## Completed work
 
@@ -68,6 +70,9 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - Added concrete class attendance detail from Calendar, conflict-keyed batch upserts, and role-aware editing controls.
 - Added the responsive group/month attendance matrix with real non-cancelled class occurrences, historical-record rows, unmarked cells, derived present/absent/recovery/unmarked counts, and participation percentage.
 - Added attendance history links from group details and More navigation, plus focused frontend and pgTAP coverage.
+- Milestone 7.1a: applied `20261015200000_tasks_authorization.sql`, which upgrades the task foundation with due dates, priorities, restricted statuses, active-profile assignee validation, profile-retention foreign keys, task RLS, and field-level trainer authorization.
+- Milestone 7.1b: added protected Tasks routes, navigation, responsive list summaries and filters, school-local overdue sorting, profile-based assignee lookup, create/edit dialogs, quick status changes, and confirmed single-task deletion.
+- Added Tasks API and frontend tests for payload shaping, zero-row delete rejection, role-specific editing, reassigned-task behavior, filters, sorting, loading/error states, and creation/deletion flows.
 
 ## Validation
 
@@ -80,6 +85,8 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - `npx supabase test db --local supabase/tests/schedule_conflicts.sql` passes all 29 pgTAP calendar cases, including authoritative timezone handling, class completeness, overlap/re-adjacency behavior, cancellation/reactivation, DST invalid-time rejection, RLS-protected bulk creation, and batch rollback.
 - `npx supabase test db --local supabase/tests/school_settings_lifecycle.sql` passes all 14 pgTAP settings-lifecycle cases, including RLS and trigger delete protection, singleton enforcement, future timezone validation, timezone locking, and continued schedule writes.
 - Milestone 6 validation passes: `npm test` runs 17 files and 49 tests with one worker/no file parallelism; `npx supabase test db --local supabase/tests/attendance.sql` passes all 15 attendance integrity and authorization cases.
+- Milestone 7.1a validation passes: local migration replay, 31 Tasks pgTAP assertions, 31 RLS pgTAP assertions, and database lint all pass. The remote project has applied `20261015200000_tasks_authorization.sql`.
+- Milestone 7.1b validation passes: `npm run lint` has no errors (Fast Refresh advisory warnings only), the bounded frontend suite passes 19 files / 72 tests, and `npm run build` passes with the existing chunk-size advisory.
 - Milestone 5 migrations `20261001223000_schedule_conflicts_and_weekly_creation.sql` and `20261001230500_protect_authoritative_school_settings.sql`, and Milestone 6 migration `20261008221000_attendance_integrity_and_authorization.sql`, have been applied and tested only in the local Supabase environment. None has been pushed or applied to the remote project.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
 - Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
@@ -96,4 +103,4 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 
 ## Next milestone
 
-Milestone 6 — Attendance is complete locally. Milestone 7 has not started.
+Milestone 7.1b — Tasks frontend is complete locally and awaiting review. Do not start the Competitions module without approval.

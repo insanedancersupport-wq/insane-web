@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Menu,
   MoreHorizontal,
+  ListTodo,
   Users,
   UserRound,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ import { useAuth } from '../../features/auth/AuthContext'
 const navigationItems = [
   { icon: LayoutDashboard, label: 'Home', to: '/app' },
   { icon: CalendarDays, label: 'Calendar', to: '/app/calendar' },
+  { icon: ListTodo, label: 'Tasks', to: '/app/tasks' },
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
   { icon: MoreHorizontal, label: 'More', to: '/app/more' },
