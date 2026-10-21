@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronRight,
   LayoutDashboard,
+  ListTodo,
   Menu,
   MoreHorizontal,
   Trophy,
@@ -19,6 +20,7 @@ import { useAuth } from '../../features/auth/AuthContext'
 const navigationItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/app/dashboard' },
   { icon: CalendarDays, label: 'Calendar', to: '/app/calendar' },
+  { icon: ListTodo, label: 'Tasks', to: '/app/tasks' },
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
   { icon: Trophy, label: 'Competitions', to: '/app/competitions' },
