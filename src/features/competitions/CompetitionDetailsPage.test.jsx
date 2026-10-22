@@ -12,11 +12,14 @@ vi.mock('./competitionsApi', () => ({
   addCompetitionParticipant: vi.fn(),
   addCompetitionTrainer: vi.fn(),
   deleteCompetition: vi.fn(),
+  deleteCompetitionResult: vi.fn(),
   enrollCompetitionGroup: vi.fn(),
   getAvailableGroups: vi.fn(),
   getCompetitionById: vi.fn(),
   getCompetitionGroups: vi.fn(),
   getCompetitionParticipants: vi.fn(),
+  getCompetitionResultMembers: vi.fn(),
+  getCompetitionResults: vi.fn(),
   getCompetitionTrainers: vi.fn(),
   getCurrentTrainerId: vi.fn(),
   getEligibleStudents: vi.fn(),
@@ -24,6 +27,7 @@ vi.mock('./competitionsApi', () => ({
   removeCompetitionGroup: vi.fn(),
   removeCompetitionParticipant: vi.fn(),
   removeCompetitionTrainer: vi.fn(),
+  saveCompetitionResult: vi.fn(),
   updateCompetition: vi.fn(),
 }))
 
@@ -68,6 +72,8 @@ describe('CompetitionDetailsPage', () => {
       participant_id: 'participant-id',
       student_id: 'student-id',
     }])
+    api.getCompetitionResultMembers.mockResolvedValue([])
+    api.getCompetitionResults.mockResolvedValue([])
     api.getCompetitionTrainers.mockResolvedValue([{
       first_name: 'Maya',
       last_name: 'Dance',
@@ -99,6 +105,7 @@ describe('CompetitionDetailsPage', () => {
     renderPage({ id: 'responsible-profile', role: 'trainer' })
 
     expect(await screen.findByText('Visible Student')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add result' })).toBeInTheDocument()
     fireEvent.click(await screen.findByRole('button', { name: 'Enroll students from group' }))
 
     await waitFor(() => expect(api.enrollCompetitionGroup).toHaveBeenCalled())
