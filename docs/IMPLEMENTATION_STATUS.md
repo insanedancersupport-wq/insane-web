@@ -27,6 +27,7 @@ Milestone 7.2b — Competitions frontend complete locally
 - Attendance is linked only to concrete, started, non-cancelled `class` entries. Recovery is an eligible same-group attendance status and never creates cross-group relationships or compensates an earlier absence.
 - Attendance eligibility uses current group membership when a record is created. Persisted records remain visible and editable by the responsible trainer after later membership removal; historical unmarked membership cannot be inferred because membership history remains deferred.
 - Competition detail display names are supplied by authenticated-only, active-user-checked SECURITY DEFINER RPCs scoped to each competition's associations. They expose no student contact fields; participant current-group information is intentionally omitted rather than broadening membership visibility.
+- Competition results use atomic result/member reconciliation RPCs and deferred constraint triggers: individual results require one enrolled participant, team results require at least two, and members retain their competition ID for database-enforced participant linkage.
 
 ## Completed work
 
@@ -72,6 +73,8 @@ Milestone 7.2b — Competitions frontend complete locally
 - Milestone 7.2a: added competition authorization, responsible-trainer, group-association, and participant-enrollment database support, including the atomic `enroll_competition_group` RPC and deletion protection for competitions with current participant rows.
 - Milestone 7.2b: added role-aware Competitions list and detail routes with summary counts, status/search/sort filters, admin-only create/edit/delete controls, responsible-trainer assignments, group associations, atomic group enrollment, individual enrollment, and participant removal confirmations.
 - Added `/app/competitions` and `/app/competitions/:competitionId` to the protected application router and Competitions to responsive navigation and More.
+- Milestone 7.2c.1: added Competition Results database authorization, enrolled-member integrity, result-member display access, retention protections, and pgTAP coverage. No frontend code was changed.
+- Milestone 7.2c.2: added responsive competition result display, filtering, atomic create/edit/delete forms, enrolled-student-only member selection, and result-aware participant-removal guidance.
 
 ## Validation
 
@@ -85,6 +88,8 @@ Milestone 7.2b — Competitions frontend complete locally
 - `npx supabase test db --local supabase/tests/school_settings_lifecycle.sql` passes all 14 pgTAP settings-lifecycle cases, including RLS and trigger delete protection, singleton enforcement, future timezone validation, timezone locking, and continued schedule writes.
 - Milestone 6 validation passes: `npm test` runs 17 files and 49 tests with one worker/no file parallelism; `npx supabase test db --local supabase/tests/attendance.sql` passes all 15 attendance integrity and authorization cases.
 - Milestone 7.2b validation passes: `npm run lint`, `npm run test -- --run --maxWorkers=1 --no-file-parallelism` (20 files, 71 tests), and `npm run build`.
+- Milestone 7.2c.1 validation passes: local reset; Results pgTAP (29); Competitions (39); Competition display access (10); RLS (31); Tasks (31); database lint; and `git diff --check`.
+- Milestone 7.2c.2 validation passes: `npm run lint`, `npm run test -- --run --maxWorkers=1 --no-file-parallelism` (21 files, 81 tests), `npm run build`, and `git diff --check`.
 - Milestone 5 migrations `20261001223000_schedule_conflicts_and_weekly_creation.sql` and `20261001230500_protect_authoritative_school_settings.sql`, and Milestone 6 migration `20261008221000_attendance_integrity_and_authorization.sql`, have been applied and tested only in the local Supabase environment. None has been pushed or applied to the remote project.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
 - Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
@@ -102,4 +107,4 @@ Milestone 7.2b — Competitions frontend complete locally
 
 ## Next milestone
 
-Milestone 7.2c — Competition results.
+Milestone 7.2c.2 — Competition results frontend complete locally.

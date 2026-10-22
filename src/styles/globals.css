@@ -566,6 +566,38 @@ a:focus-visible {
   gap: var(--space-2);
 }
 
+.competition-results-list {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.competition-result {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+}
+
+.competition-result h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.competition-result p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.competition-result__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
 .assigned-trainer-list strong,
 .assigned-trainer-list small {
   display: block;
@@ -1056,6 +1088,11 @@ a:focus-visible {
 
   .competition-detail-grid__wide {
     grid-column: 1 / -1;
+  }
+
+  .competition-result {
+    grid-template-columns: 1fr auto;
+    align-items: start;
   }
 
   .calendar-intro {

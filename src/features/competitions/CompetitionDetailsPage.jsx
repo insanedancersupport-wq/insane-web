@@ -14,6 +14,7 @@ import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
+import { CompetitionResultsSection } from './CompetitionResultsSection'
 import {
   addCompetitionGroup,
   addCompetitionParticipant,
@@ -396,6 +397,11 @@ export function CompetitionDetailsPage() {
             ))}
           </ul>
         </Card>
+        <CompetitionResultsSection
+          canManage={canManage}
+          competitionId={competitionId}
+          participants={participantsQuery.data ?? []}
+        />
       </section>
       <Dialog
         footer={(
