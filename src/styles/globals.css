@@ -533,6 +533,51 @@ a:focus-visible {
   margin-top: var(--space-5);
 }
 
+.competition-actions {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+}
+
+.competition-actions p,
+.competition-section-heading p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.competition-detail-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.competition-section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.competition-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: var(--space-2);
+}
+
+.assigned-trainer-list strong,
+.assigned-trainer-list small {
+  display: block;
+}
+
+.assigned-trainer-list small {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
 .success-message {
   margin: var(--space-4) 0 0;
   color: var(--color-success);
@@ -994,6 +1039,23 @@ a:focus-visible {
 
   .list-filters {
     grid-template-columns: repeat(2, minmax(0, 240px));
+  }
+
+  .competition-filters {
+    grid-template-columns: repeat(3, minmax(0, 240px));
+  }
+
+  .competition-actions {
+    grid-template-columns: max-content max-content 1fr;
+    align-items: center;
+  }
+
+  .competition-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .competition-detail-grid__wide {
+    grid-column: 1 / -1;
   }
 
   .calendar-intro {
