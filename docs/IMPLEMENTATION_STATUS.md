@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Milestone 6 — Complete locally; remote migrations review/apply pending
+Milestone 7.2b — Competitions frontend complete locally
 
 ## Decisions
 
@@ -26,6 +26,7 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - Room and trainer conflicts are enforced by distinct partial PostgreSQL exclusion constraints using half-open `tstzrange` intervals. Cancelled entries do not block slots; adjacent entries remain valid.
 - Attendance is linked only to concrete, started, non-cancelled `class` entries. Recovery is an eligible same-group attendance status and never creates cross-group relationships or compensates an earlier absence.
 - Attendance eligibility uses current group membership when a record is created. Persisted records remain visible and editable by the responsible trainer after later membership removal; historical unmarked membership cannot be inferred because membership history remains deferred.
+- Competition detail display names are supplied by authenticated-only, active-user-checked SECURITY DEFINER RPCs scoped to each competition's associations. They expose no student contact fields; participant current-group information is intentionally omitted rather than broadening membership visibility.
 
 ## Completed work
 
@@ -68,6 +69,9 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - Added concrete class attendance detail from Calendar, conflict-keyed batch upserts, and role-aware editing controls.
 - Added the responsive group/month attendance matrix with real non-cancelled class occurrences, historical-record rows, unmarked cells, derived present/absent/recovery/unmarked counts, and participation percentage.
 - Added attendance history links from group details and More navigation, plus focused frontend and pgTAP coverage.
+- Milestone 7.2a: added competition authorization, responsible-trainer, group-association, and participant-enrollment database support, including the atomic `enroll_competition_group` RPC and deletion protection for competitions with current participant rows.
+- Milestone 7.2b: added role-aware Competitions list and detail routes with summary counts, status/search/sort filters, admin-only create/edit/delete controls, responsible-trainer assignments, group associations, atomic group enrollment, individual enrollment, and participant removal confirmations.
+- Added `/app/competitions` and `/app/competitions/:competitionId` to the protected application router and Competitions to responsive navigation and More.
 
 ## Validation
 
@@ -80,6 +84,7 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - `npx supabase test db --local supabase/tests/schedule_conflicts.sql` passes all 29 pgTAP calendar cases, including authoritative timezone handling, class completeness, overlap/re-adjacency behavior, cancellation/reactivation, DST invalid-time rejection, RLS-protected bulk creation, and batch rollback.
 - `npx supabase test db --local supabase/tests/school_settings_lifecycle.sql` passes all 14 pgTAP settings-lifecycle cases, including RLS and trigger delete protection, singleton enforcement, future timezone validation, timezone locking, and continued schedule writes.
 - Milestone 6 validation passes: `npm test` runs 17 files and 49 tests with one worker/no file parallelism; `npx supabase test db --local supabase/tests/attendance.sql` passes all 15 attendance integrity and authorization cases.
+- Milestone 7.2b validation passes: `npm run lint`, `npm run test -- --run --maxWorkers=1 --no-file-parallelism` (20 files, 71 tests), and `npm run build`.
 - Milestone 5 migrations `20261001223000_schedule_conflicts_and_weekly_creation.sql` and `20261001230500_protect_authoritative_school_settings.sql`, and Milestone 6 migration `20261008221000_attendance_integrity_and_authorization.sql`, have been applied and tested only in the local Supabase environment. None has been pushed or applied to the remote project.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
 - Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
@@ -93,7 +98,8 @@ Milestone 6 — Complete locally; remote migrations review/apply pending
 - The Edge Function requires Supabase-managed `SUPABASE_URL` and `SUPABASE_SECRET_KEYS`. Secret keys must remain server-side and must never be configured as a `VITE_*` value.
 - Group membership history remains intentionally deferred. Historical attendance preserves recorded rows after membership removal, but cannot reconstruct unmarked historical roster cells for removed students.
 - Before remote Milestone 5 use, review and apply both Milestone 5 migrations. The first intentionally stops if duplicate `school_settings`, incomplete existing classes, or existing non-cancelled room/trainer overlaps require manual correction; the second hardens the authoritative settings lifecycle required by Calendar.
+- Competition participant removal has no separate audit history. Once all current participant rows are removed, the database permits permanent competition deletion.
 
 ## Next milestone
 
-Milestone 6 — Attendance is complete locally. Milestone 7 has not started.
+Milestone 7.2c — Competition results.

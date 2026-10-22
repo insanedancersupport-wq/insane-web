@@ -18,6 +18,8 @@ import { StudentDetailPage } from '../features/students/StudentDetailPage'
 import { CalendarPage } from '../features/calendar/CalendarPage'
 import { AttendancePage } from '../features/attendance/AttendancePage'
 import { AttendanceMatrixPage } from '../features/attendance/AttendanceMatrixPage'
+import { CompetitionsPage } from '../features/competitions/CompetitionsPage'
+import { CompetitionDetailsPage } from '../features/competitions/CompetitionDetailsPage'
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +56,8 @@ export const router = createBrowserRouter([
           { path: '/app/calendar', element: <CalendarPage /> },
           { path: '/app/attendance/entries/:scheduleEntryId', element: <AttendancePage /> },
           { path: '/app/attendance', element: <AttendanceMatrixPage /> },
+          { path: '/app/competitions', element: <CompetitionsPage /> },
+          { path: '/app/competitions/:competitionId', element: <CompetitionDetailsPage /> },
           { path: '/app/more', element: <MorePage /> },
           { path: '/app/*', element: <App /> },
         ],

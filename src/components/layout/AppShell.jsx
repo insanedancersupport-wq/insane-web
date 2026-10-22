@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Menu,
   MoreHorizontal,
+  Trophy,
   Users,
   UserRound,
 } from 'lucide-react'
@@ -17,6 +18,7 @@ const navigationItems = [
   { icon: CalendarDays, label: 'Calendar', to: '/app/calendar' },
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
+  { icon: Trophy, label: 'Competitions', to: '/app/competitions' },
   { icon: MoreHorizontal, label: 'More', to: '/app/more' },
 ]
 
