@@ -57,6 +57,10 @@ values
   );
 
 update public.profiles
+set onboarding_completed_at = now()
+where onboarding_completed_at is null;
+
+update public.profiles
 set role = 'admin'
 where id = '00000000-0000-4000-8000-000000000001';
 

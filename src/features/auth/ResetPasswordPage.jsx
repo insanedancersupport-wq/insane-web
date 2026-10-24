@@ -7,7 +7,7 @@ import { LoadingState } from '../../components/feedback/LoadingState'
 import { useAuth } from './AuthContext'
 
 export function ResetPasswordPage() {
-  const { isLoading, session, updatePassword } = useAuth()
+  const { isLoading, refreshProfile, session, updatePassword } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -28,6 +28,7 @@ export function ResetPasswordPage() {
 
     try {
       await updatePassword(password)
+      await refreshProfile()
       navigate('/app', { replace: true })
     } catch (submissionError) {
       setError(submissionError.message)

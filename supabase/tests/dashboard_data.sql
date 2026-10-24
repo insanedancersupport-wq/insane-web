@@ -13,6 +13,10 @@ values
   ('f1000000-0000-4000-8000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'dashboard-inactive@example.test', 'not-used', now(), '{}'::jsonb, '{"full_name":"Dashboard Inactive"}'::jsonb, now(), now());
 
 update public.profiles
+set onboarding_completed_at = now()
+where onboarding_completed_at is null;
+
+update public.profiles
 set role = 'admin'
 where id = 'f1000000-0000-4000-8000-000000000001';
 

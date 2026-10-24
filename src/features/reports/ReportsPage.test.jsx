@@ -129,6 +129,7 @@ describe('ReportsPage', () => {
     expect(screen.getByText('Historical recorded students')).toBeInTheDocument()
     expect(screen.getByText('Status-completed classes')).toBeInTheDocument()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+    expect(screen.getByText('50.00%')).toBeInTheDocument()
     expect(await screen.findByText('Attendance trend data')).toBeInTheDocument()
     expect(screen.getByLabelText('Present 0')).toBeInTheDocument()
     await waitFor(() => expect(getAttendanceTrendSeries).toHaveBeenCalled())
@@ -338,4 +339,36 @@ describe('ReportsPage', () => {
     expect(getCompetitionParticipationSeries).toHaveBeenCalledTimes(trendCalls)
     expect(await screen.findByText('Competition trend unavailable for this range')).toBeInTheDocument()
   })
+
+  it('exposes an enabled CSV export action after the initial student report loads', async () => {
+    renderReports()
+    await screen.findByText('Alex Student')
+
+    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeEnabled()
+  })
+
+  it('cancels a pending export without downloading and permits a later export', async () => {
+    const createObjectUrl = vi.fn(() => 'blob:report')
+    const revokeObjectUrl = vi.fn()
+    Object.assign(URL, { createObjectURL: createObjectUrl, revokeObjectURL: revokeObjectUrl })
+    let resolvePage
+    getStudentAttendanceReport
+      .mockResolvedValueOnce(studentRows)
+      .mockImplementationOnce(() => new Promise((resolve) => { resolvePage = resolve }))
+      .mockResolvedValueOnce(studentRows)
+    renderReports()
+    await screen.findByText('Alex Student')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel export' }))
+    resolvePage(studentRows)
+    await Promise.resolve()
+    expect(createObjectUrl).not.toHaveBeenCalled()
+    expect(screen.queryByText('CSV export downloaded.')).not.toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Export CSV' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }))
+    await waitFor(() => expect(getStudentAttendanceReport).toHaveBeenCalledTimes(3))
+  })
+
 })

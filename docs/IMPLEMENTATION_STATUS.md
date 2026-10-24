@@ -2,7 +2,9 @@
 
 ## Current milestone
 
-Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete locally
+Milestone 8.2c — Reports CSV export complete locally
+
+PRE-M9 secure onboarding — backend Phase 1 and frontend Phase 2 complete locally; remote database migration, invitation redirect configuration, and deployment remain pending.
 
 ## Decisions
 
@@ -16,6 +18,7 @@ Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete l
 - Milestone 3 uses explicit authenticated table grants combined with RLS policies. Grants alone do not authorize access.
 - Milestone 3 authorization helpers are `SECURITY DEFINER` functions in the non-Data-API `private` schema. The schema grants authenticated callers only the usage and helper execution needed for RLS evaluation.
 - The `admin-users` Edge Function validates the caller's JWT and independently checks for an active administrator profile before using a server-side client configured from `SUPABASE_SECRET_KEYS`.
+- Secure onboarding extends the `admin-users` authorization check to require `onboarding_completed_at`. Invitations use only the server-configured `APP_URL` origin and redirect to `/set-password`; browser requests cannot supply the redirect target.
 - Student-group junction rows represent current membership in Milestone 4. Removing a student from a group deletes the row; the existing `joined_on` and `left_on` columns remain unchanged and have no new historical semantics.
 - Group-trainer and student-group changes use reviewed public RPCs so exact-set reconciliation is atomic. The RPCs retain the existing database constraints and do not expose the private RLS helper schema.
 - Milestone 5 establishes an authoritative single-row `school_settings` record. The forward-only migration refuses to choose among duplicate settings rows, bootstraps Insane Dance Center with `Europe/Bucharest` only when no row exists, validates the configured IANA timezone, and prevents future duplicate settings rows.
@@ -57,6 +60,10 @@ Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete l
 - Competition filtering intentionally supports bounded enum status/result-type filters but not a competition dropdown because the existing competition list API is unbounded. Competition Results preserve one row per result, retain no-result rows, use final-row keyset pagination, and never fetch extra member or student data.
 - Competition member display uses only the returned `{ student_id, display_name }` JSON. Lists remain collapsed by default, and a returned length below `result_member_count` explicitly states “Showing N of M members.”
 - Competition Participation Trend uses the server-provided monthly series, preserves zero months, describes enrollments as distinct monthly enrolled participants rather than attendees, and applies the 12-touched-month limit independently of Competition Results table validity.
+- Reports CSV export uses applied filters only and starts paginated Student Attendance and Competition Results exports from a null cursor with sequential 100-row requests. Exports stop at 5,000 data rows, reject malformed or repeated cursors, and never download partial data after errors or cancellation.
+- CSV uses UTF-8 BOM, comma delimiters, CRLF line endings, stable human-readable columns, and quoted field escaping. Untrusted text with leading whitespace/control characters followed by `=`, `+`, `-`, or `@` is prefixed with an apostrophe before CSV quoting to prevent spreadsheet formula interpretation.
+- One client-side export runs at a time. Cancellation prevents additional page requests, CSV generation, and download; active exports are cancelled on report-tab, authenticated-user, and component lifecycle changes.
+- Mandatory onboarding uses the server-owned `profiles.onboarding_completed_at` state. Authenticated but incomplete users are restricted to `/set-password`; protected application routes redirect there, while completed active users retain the normal dashboard flow. The setup page submits only through Supabase Auth password update, explicitly reloads the profile, and navigates only after the server confirms completion. Password recovery remains `/reset-password` and also refreshes the profile before returning to the application.
 
 ## Completed work
 
@@ -112,6 +119,7 @@ Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete l
 - Milestone 8.2b.1: added the protected `/app/reports` route and responsive AppShell/More navigation, Student Attendance and Group Attendance report screens, applied date/group filters, student keyset pagination, group server aggregates, and a dependency-free responsive monthly attendance chart with a semantic table alternative. Trainer Activity and Competition Results are clearly marked for M8.2b.2.
 - Hardened M8.2b.1 Reports cache teardown, independent table/chart range validation, and empty continuation-page navigation without changing reporting RPC contracts or backend authorization.
 - Milestone 8.2b.2: completed Trainer Activity table and supplementary bounded class-activity chart, Competition Results table with member disclosure and keyset pagination, and Competition Participation Trend chart/table. Trainer Activity and Competition Results now replace their M8.2b.1 Coming Soon states.
+- Milestone 8.2c: added browser-native CSV exports for Student Attendance, Group Attendance, Trainer Activity, and Competition Results with 5,000-row limits, sequential keyset traversal, cancellation, success/error feedback, Excel-compatible serialization, and formula-injection protection.
 
 ## Validation
 
@@ -137,6 +145,12 @@ Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete l
 - M8.2b.1 correctness regression coverage adds cache cancellation/removal on logout, session loss, and user switching; a 366-day/13-month table range with chart-only rejection; empty continuation pagination recovery; stale async filter-response isolation; and deterministic Bucharest midnight/DST/month-label cases.
 - M8.2b.2 regression coverage validates deployed RPC arguments, Admin/Trainer aggregate rendering, controlled trainer-limit errors, no-result and multiple-result competition rows, 50/51 member disclosure, competition status/result-type filter application, keyset continuation recovery, and chart-only rejection of a 13-month competition range.
 - M8.2b.2 validation passes: `npm run lint` (five pre-existing Fast Refresh advisory warnings only); frontend tests (27 files, 116 tests) with one worker/no file parallelism; `npm run build` (existing Vite over-500 kB chunk advisory); and `git diff --check`.
+- M8.2c export regression coverage includes BOM/CRLF serialization, quoting, Romanian diacritics, null/numeric values, formula injection prefixes, sequential keyset pages, overflow, and malformed/repeated cursors.
+- M8.2c local validation passes: `npm run lint` (five pre-existing Fast Refresh advisory warnings only); frontend tests (28 files, 123 tests) with one worker/no file parallelism; `npm run build` (existing Vite over-500 kB chunk advisory); and `git diff --check`. Manual CSV acceptance remains pending.
+- M8.2c cancellation regression coverage verifies that cancellation after a pending page resolves stops further keyset requests and prevents collection completion. Full React Testing Library coverage of logout, user-switch, tab-switch, and unmount download suppression remains deferred to M9 hardening.
+- M8.2c RTL harness repair confirmed that an async module mock hid the real export boundary. Native object-URL spies now exercise the real export button; explicit cancellation returns the control to idle only when the cancelled controller is still current.
+- PRE-M9 frontend: added `/set-password`, onboarding-aware profile loading and explicit refresh, protected/public/password-setup route boundaries, and RTL coverage for password validation, failed updates, server-confirmation denial, refresh failure, missing sessions, inactive accounts, protected-route denial, and completed-user redirect behavior. Manual verification after the backend migration is deployed must use an actual invitation link, an expired invitation, password recovery, and an account switch in separate browser sessions.
+- PRE-M9 integration: `admin-users` validates `APP_URL` as an HTTP(S) origin without credentials, a path, query, or fragment, then passes its derived `/set-password` URL to `inviteUserByEmail`. Missing or invalid configuration safely prevents invitation creation. The default browser Supabase client configuration handles supported invitation URL session establishment; no application-specific callback parsing was added.
 - Milestone 5 migrations `20261001223000_schedule_conflicts_and_weekly_creation.sql` and `20261001230500_protect_authoritative_school_settings.sql`, and Milestone 6 migration `20261008221000_attendance_integrity_and_authorization.sql`, have been applied and tested only in the local Supabase environment. None has been pushed or applied to the remote project.
 - Local `admin-users` Edge Function checks confirm unauthenticated callers receive `401`, trainers receive `403`, inactive admins receive `403`, nonexistent targets receive `404`, and active administrators can invite a user.
 - Remote Milestone 3 smoke test passed: active admins can access user administration and invite users, invited users receive trainer profiles and can authenticate, and trainers are blocked from `/app/users` with “Administrator access required.”
@@ -154,7 +168,18 @@ Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete l
 - Attendance reports cannot reconstruct historical unmarked roster eligibility after a membership row is removed. Permanent student or schedule-entry deletion still cascade-deletes attendance history; retention hardening remains deferred to Milestone 9.
 - Student-specific Reports filtering is deferred until the backend offers bounded, authorized student search. The current UI deliberately avoids an unbounded student download.
 - Trainer-specific and competition-specific Reports dropdowns remain deferred until bounded, authorized selector APIs exist. The UI deliberately avoids unbounded trainer and competition downloads.
+- A real local invitation-email E2E flow has not been run: the local Edge Runtime container is stopped and no local server-side `APP_URL`/admin invocation configuration is present. Database trigger, authorization, redirect construction, and frontend session/route behavior are validated independently.
+
+## PRE-M9 deployment checklist
+
+1. Review `20261024170000_secure_initial_password_onboarding.sql`, including its non-empty password-hash backfill predicate. Inventory and explicitly expire/reissue pending production invitations whose hash state is not confirmed.
+2. Configure Supabase Auth Site URL and exact Redirect URLs for the production application origin and `${APP_URL}/set-password`.
+3. Configure the server-only `APP_URL` Edge Function secret as the production application origin. Confirm `SUPABASE_SECRET_KEYS` remains server-only and is never exposed as a `VITE_*` variable.
+4. Apply the reviewed migration before deploying frontend enforcement. Confirm existing password-based active Admin and Trainer accounts remain authorized, while incomplete/inactive accounts remain denied.
+5. Deploy the updated `admin-users` Edge Function, then deploy the frontend containing `/set-password` and its route guards.
+6. Smoke test a newly invited Trainer and Admin, an expired invitation, an incomplete-user password reset, direct operational API denial before completion, and normal completed-user login/logout.
+7. Roll back frontend and Edge Function releases only after preventing new invitations. Do not roll back the database migration by clearing completion timestamps; instead, investigate failed invitations, preserve completed timestamps, and reissue invitations where needed.
 
 ## Next milestone
 
-Milestone 8.2b.2 — Trainer Activity and Competition Results reports complete locally. CSV export remains out of scope.
+Milestone 9 — Production hardening, security, integrity, performance, and launch preparation remain.

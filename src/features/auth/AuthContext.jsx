@@ -31,6 +31,20 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
+    async function fetchProfile(session) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, active, onboarding_completed_at')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (error) {
+        throw new Error('Your account profile could not be loaded.')
+      }
+
+      return data
+    }
+
     async function loadProfile(session) {
       const nextUserId = session?.user.id ?? null
       const userChanged = currentUserId.current !== null && currentUserId.current !== nextUserId
@@ -61,11 +75,14 @@ export function AuthProvider({ children }) {
         return
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role, active')
-        .eq('id', session.user.id)
-        .maybeSingle()
+      let profile = null
+      let profileError = null
+
+      try {
+        profile = await fetchProfile(session)
+      } catch (error) {
+        profileError = error.message
+      }
 
       if (!mounted) {
         return
@@ -73,8 +90,8 @@ export function AuthProvider({ children }) {
 
       setState({
         isLoading: false,
-        profile: data,
-        profileError: error ? 'Your account profile could not be loaded.' : null,
+        profile,
+        profileError,
         session,
       })
     }
@@ -160,6 +177,30 @@ export function AuthProvider({ children }) {
         if (error) {
           throw new Error('Unable to update your password. Please try again.')
         }
+      },
+      async refreshProfile() {
+        if (!state.session) {
+          throw new Error('Your session has expired. Please sign in again.')
+        }
+
+        const client = configuredClient()
+        const { data, error } = await client
+          .from('profiles')
+          .select('id, full_name, role, active, onboarding_completed_at')
+          .eq('id', state.session.user.id)
+          .maybeSingle()
+
+        if (error || !data) {
+          throw new Error('Your account profile could not be refreshed. Please try again.')
+        }
+
+        setState((currentState) => (
+          currentState.session?.user.id === state.session.user.id
+            ? { ...currentState, profile: data, profileError: null }
+            : currentState
+        ))
+
+        return data
       },
     }),
     [state],
