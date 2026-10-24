@@ -14,6 +14,7 @@ import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { CompetitionResultsSection } from './CompetitionResultsSection'
 import {
   addCompetitionGroup,
@@ -178,6 +179,7 @@ export function CompetitionDetailsPage() {
       queryClient.invalidateQueries({ queryKey: ['competition-trainers', competitionId] }),
       queryClient.invalidateQueries({ queryKey: ['competition-groups', competitionId] }),
       queryClient.invalidateQueries({ queryKey: ['competition-participants', competitionId] }),
+      invalidateDashboardQueries(queryClient),
     ])
   }
 
@@ -193,6 +195,7 @@ export function CompetitionDetailsPage() {
     mutationFn: deleteCompetition,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['competitions'] })
+      await invalidateDashboardQueries(queryClient)
       navigate('/app/competitions', { state: { message: 'Competition deleted.' } })
     },
   })

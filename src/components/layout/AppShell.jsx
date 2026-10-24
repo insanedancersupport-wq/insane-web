@@ -9,12 +9,14 @@ import {
   Users,
   UserRound,
 } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 
+import { Button } from '../ui/Button'
 import { useAuth } from '../../features/auth/AuthContext'
 
 const navigationItems = [
-  { icon: LayoutDashboard, label: 'Home', to: '/app' },
+  { icon: LayoutDashboard, label: 'Dashboard', to: '/app/dashboard' },
   { icon: CalendarDays, label: 'Calendar', to: '/app/calendar' },
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
@@ -53,7 +55,7 @@ function Navigation({ variant }) {
           className={({ isActive }) =>
             `navigation__link${isActive ? ' navigation__link--active' : ''}`
           }
-          end={to === '/app'}
+          end={to === '/app/dashboard'}
           key={to}
           to={to}
         >
@@ -63,6 +65,92 @@ function Navigation({ variant }) {
         </NavLink>
       ))}
     </nav>
+  )
+}
+
+function roleLabel(role) {
+  return role === 'admin' ? 'Admin' : 'Trainer'
+}
+
+function UserMenu() {
+  const { profile, session, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [error, setError] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+  const menuRef = useRef(null)
+  const buttonRef = useRef(null)
+  const email = session?.user?.email ?? ''
+  const displayName = profile?.full_name || email || 'Account'
+
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined
+    }
+
+    function closeOnOutsideClick(event) {
+      if (!menuRef.current?.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+        buttonRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [isOpen])
+
+  async function handleSignOut() {
+    setError('')
+    setIsSigningOut(true)
+
+    try {
+      await signOut()
+      setIsOpen(false)
+      navigate('/login', { replace: true })
+    } catch (signOutError) {
+      setError(signOutError.message)
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
+  return (
+    <div className="user-menu" ref={menuRef}>
+      <button
+        aria-controls="user-menu-popover"
+        aria-expanded={isOpen}
+        aria-label="Open user menu"
+        className="icon-button user-menu__trigger"
+        onClick={() => setIsOpen((open) => !open)}
+        ref={buttonRef}
+        type="button"
+      >
+        <UserRound aria-hidden="true" size={22} />
+      </button>
+      {isOpen && (
+        <section className="user-menu__popover" id="user-menu-popover">
+          <p className="user-menu__name">{displayName}</p>
+          <p className="user-menu__role">{roleLabel(profile?.role)}</p>
+          {email && <p className="user-menu__email">{email}</p>}
+          <div className="user-menu__separator" />
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <Button disabled={isSigningOut} onClick={() => void handleSignOut()} variant="tertiary">
+            {isSigningOut ? 'Signing out...' : 'Sign out'}
+          </Button>
+        </section>
+      )}
+    </div>
   )
 }
 
@@ -85,6 +173,7 @@ export function AppShell({ children, title = 'Home' }) {
             <Bell aria-hidden="true" size={23} />
             <span aria-label="3 unread notifications" className="notification-button__badge">3</span>
           </button>
+          <UserMenu />
           <h1>{title}</h1>
         </header>
 

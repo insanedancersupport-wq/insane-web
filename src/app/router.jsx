@@ -20,6 +20,7 @@ import { AttendancePage } from '../features/attendance/AttendancePage'
 import { AttendanceMatrixPage } from '../features/attendance/AttendanceMatrixPage'
 import { CompetitionsPage } from '../features/competitions/CompetitionsPage'
 import { CompetitionDetailsPage } from '../features/competitions/CompetitionDetailsPage'
+import { DashboardPage } from '../features/dashboard/DashboardPage'
 
 export const router = createBrowserRouter([
   {
@@ -59,6 +60,8 @@ export const router = createBrowserRouter([
           { path: '/app/competitions', element: <CompetitionsPage /> },
           { path: '/app/competitions/:competitionId', element: <CompetitionDetailsPage /> },
           { path: '/app/more', element: <MorePage /> },
+          { path: '/app/dashboard', element: <DashboardPage /> },
+          { path: '/app', element: <Navigate replace to="/app/dashboard" /> },
           { path: '/app/*', element: <App /> },
         ],
       },

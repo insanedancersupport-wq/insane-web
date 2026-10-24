@@ -26,6 +26,7 @@ import {
   todayInSchoolTimezone,
 } from '../../utils/scheduleDateTime'
 import { useAuth } from '../auth/AuthContext'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { listGroups } from '../groups/groupsApi'
 import { listRooms } from '../rooms/roomsApi'
 import { listTrainers } from '../trainers/trainersApi'
@@ -449,7 +450,10 @@ export function CalendarPage() {
   const isAdmin = profile.role === 'admin'
 
   function invalidateCalendar() {
-    return queryClient.invalidateQueries({ queryKey: ['calendar', 'entries'] })
+    return Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['calendar', 'entries'] }),
+      invalidateDashboardQueries(queryClient),
+    ])
   }
 
   const entryMutation = useMutation({

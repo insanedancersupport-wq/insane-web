@@ -62,7 +62,7 @@ describe('route guards', () => {
         <Route element={<PublicOnlyRoute />}>
           <Route element={<p>Login screen</p>} path="/login" />
         </Route>
-        <Route element={<p>Protected dashboard</p>} path="/app" />
+        <Route element={<p>Protected dashboard</p>} path="/app/dashboard" />
       </>
     ))
 

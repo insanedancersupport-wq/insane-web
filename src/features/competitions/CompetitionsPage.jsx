@@ -15,6 +15,7 @@ import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { createCompetition, getCompetitions } from './competitionsApi'
 
 const competitionSchema = z.object({
@@ -102,6 +103,7 @@ export function CompetitionsPage() {
     mutationFn: createCompetition,
     onSuccess: async (competition) => {
       await queryClient.invalidateQueries({ queryKey: ['competitions'] })
+      await invalidateDashboardQueries(queryClient)
       setCreateOpen(false)
       navigate(`/app/competitions/${competition.id}`, {
         state: { message: 'Competition created successfully.' },

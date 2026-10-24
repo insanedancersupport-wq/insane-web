@@ -15,6 +15,7 @@ import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { listGroups } from '../groups/groupsApi'
 import {
   createStudent,
@@ -159,6 +160,7 @@ export function StudentsPage() {
       queryClient.invalidateQueries({ queryKey: ['students-with-groups'] })
       queryClient.invalidateQueries({ queryKey: ['student-groups', studentId] })
       queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
+      invalidateDashboardQueries(queryClient)
       setEditingStudent(null)
     },
   })
@@ -172,6 +174,7 @@ export function StudentsPage() {
         await queryClient.invalidateQueries({ queryKey: ['students'] })
         await queryClient.invalidateQueries({ queryKey: ['students-with-groups'] })
         await queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
+        await invalidateDashboardQueries(queryClient)
         setEditingStudent(null)
       }
       setError(saveError.message)

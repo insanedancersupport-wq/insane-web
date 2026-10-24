@@ -21,7 +21,7 @@ export function LoginPage() {
 
     try {
       await signIn({ email, password })
-      navigate(location.state?.from?.pathname ?? '/app', { replace: true })
+      navigate(location.state?.from?.pathname ?? '/app/dashboard', { replace: true })
     } catch (submissionError) {
       setError(submissionError.message)
     } finally {

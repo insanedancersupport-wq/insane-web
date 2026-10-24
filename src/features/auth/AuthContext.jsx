@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '../../services/supabaseClient'
+import { queryClient } from '../../app/queryClient'
 
 export const AuthContext = createContext(null)
 
@@ -25,6 +26,7 @@ export function AuthProvider({ children }) {
 
     async function loadProfile(session) {
       if (!session) {
+        queryClient.removeQueries({ queryKey: ['dashboard'] })
         if (mounted) {
           setState({ isLoading: false, profile: null, profileError: null, session: null })
         }
@@ -117,6 +119,8 @@ export function AuthProvider({ children }) {
         if (error) {
           throw new Error('Unable to sign out. Please try again.')
         }
+
+        queryClient.removeQueries({ queryKey: ['dashboard'] })
       },
       async sendPasswordReset(email) {
         const client = configuredClient()
