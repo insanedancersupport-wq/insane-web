@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { supabase } from '../../services/supabaseClient'
 import { queryClient } from '../../app/queryClient'
@@ -13,7 +13,14 @@ function configuredClient() {
   return supabase
 }
 
+async function clearAuthenticatedQueryCaches() {
+  await queryClient.cancelQueries({ queryKey: ['reports'] })
+  queryClient.removeQueries({ queryKey: ['reports'] })
+  queryClient.removeQueries({ queryKey: ['dashboard'] })
+}
+
 export function AuthProvider({ children }) {
+  const currentUserId = useRef(null)
   const [state, setState] = useState({
     isLoading: true,
     profile: null,
@@ -25,8 +32,17 @@ export function AuthProvider({ children }) {
     let mounted = true
 
     async function loadProfile(session) {
+      const nextUserId = session?.user.id ?? null
+      const userChanged = currentUserId.current !== null && currentUserId.current !== nextUserId
+
+      if (!session || userChanged) {
+        currentUserId.current = nextUserId
+        await clearAuthenticatedQueryCaches()
+      } else if (nextUserId) {
+        currentUserId.current = nextUserId
+      }
+
       if (!session) {
-        queryClient.removeQueries({ queryKey: ['dashboard'] })
         if (mounted) {
           setState({ isLoading: false, profile: null, profileError: null, session: null })
         }
@@ -64,6 +80,7 @@ export function AuthProvider({ children }) {
     }
 
     if (!supabase) {
+      void clearAuthenticatedQueryCaches()
       setState({
         isLoading: false,
         profile: null,
@@ -73,12 +90,16 @@ export function AuthProvider({ children }) {
       return undefined
     }
 
-    void supabase.auth.getSession().then(({ data, error }) => {
+    void supabase.auth.getSession().then(async ({ data, error }) => {
       if (!mounted) {
         return
       }
 
       if (error) {
+        await clearAuthenticatedQueryCaches()
+        if (!mounted) {
+          return
+        }
         setState({
           isLoading: false,
           profile: null,
@@ -120,7 +141,7 @@ export function AuthProvider({ children }) {
           throw new Error('Unable to sign out. Please try again.')
         }
 
-        queryClient.removeQueries({ queryKey: ['dashboard'] })
+        await clearAuthenticatedQueryCaches()
       },
       async sendPasswordReset(email) {
         const client = configuredClient()
