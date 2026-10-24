@@ -38,16 +38,18 @@ function parseFullName(fullName: unknown) {
 function secretKey() {
   const configuredKeys = Deno.env.get('SUPABASE_SECRET_KEYS')
 
-  if (!configuredKeys) {
-    return null
+  if (configuredKeys) {
+    try {
+      const keys = JSON.parse(configuredKeys)
+      if (typeof keys.default === 'string' && keys.default) {
+        return keys.default
+      }
+    } catch {
+      return null
+    }
   }
 
-  try {
-    const keys = JSON.parse(configuredKeys)
-    return typeof keys.default === 'string' && keys.default ? keys.default : null
-  } catch {
-    return null
-  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || null
 }
 
 Deno.serve(async (request) => {

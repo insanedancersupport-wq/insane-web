@@ -16,16 +16,18 @@ function respond(status: number, body: Record<string, string | boolean>) {
 function secretKey() {
   const configuredKeys = Deno.env.get('SUPABASE_SECRET_KEYS')
 
-  if (!configuredKeys) {
-    return null
+  if (configuredKeys) {
+    try {
+      const keys = JSON.parse(configuredKeys)
+      if (typeof keys.default === 'string' && keys.default) {
+        return keys.default
+      }
+    } catch {
+      return null
+    }
   }
 
-  try {
-    const keys = JSON.parse(configuredKeys)
-    return typeof keys.default === 'string' && keys.default ? keys.default : null
-  } catch {
-    return null
-  }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || null
 }
 
 Deno.serve(async (request) => {
@@ -94,16 +96,21 @@ Deno.serve(async (request) => {
     return respond(500, { error: 'Password setup is unavailable.' })
   }
 
-  const { error: updateError } = await adminClient.auth.admin.updateUserById(userData.user.id, {
+  const { error: passwordUpdateError } = await adminClient.auth.admin.updateUserById(userData.user.id, { password })
+
+  if (passwordUpdateError) {
+    return respond(400, { error: 'Unable to set your password. Please try again.' })
+  }
+
+  const { error: markerUpdateError } = await adminClient.auth.admin.updateUserById(userData.user.id, {
     app_metadata: {
       ...targetUserData.user.app_metadata,
       initial_password_setup_nonce: crypto.randomUUID(),
     },
-    password,
   })
 
-  if (updateError) {
-    return respond(400, { error: 'Unable to set your password. Please try again.' })
+  if (markerUpdateError) {
+    return respond(500, { error: 'Your password was updated, but account setup could not be completed. Please try again.' })
   }
 
   return respond(200, { success: true })

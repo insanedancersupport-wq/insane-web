@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(25);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -42,20 +42,29 @@ insert into public.rooms (id, name)
 values ('93000000-0000-4000-8000-000000000001', 'Onboarding Room');
 
 update auth.users
-set
-  encrypted_password = 'completed-admin-password',
-  raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'admin-server-nonce')
+set encrypted_password = 'completed-admin-password'
 where id = '91000000-0000-4000-8000-000000000001';
 
 update auth.users
-set
-  encrypted_password = 'completed-trainer-password',
-  raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'trainer-server-nonce')
+set encrypted_password = 'completed-trainer-password'
+where id = '91000000-0000-4000-8000-000000000002';
+
+select ok(
+  (select onboarding_completed_at is null from public.profiles where id = '91000000-0000-4000-8000-000000000001'),
+  'password changes remain incomplete before the server completion marker is written'
+);
+
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'admin-server-nonce')
+where id = '91000000-0000-4000-8000-000000000001';
+
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'trainer-server-nonce')
 where id = '91000000-0000-4000-8000-000000000002';
 
 select ok(
   (select onboarding_completed_at is not null from public.profiles where id = '91000000-0000-4000-8000-000000000001'),
-  'password hash change completes active admin onboarding'
+  'server completion marker completes active admin onboarding after the password update'
 );
 
 select ok(
@@ -156,14 +165,21 @@ select ok(
 );
 
 update auth.users
-set
-  encrypted_password = 'completed-incomplete-password',
-  raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'incomplete-server-nonce')
+set encrypted_password = 'completed-incomplete-password'
+where id = '91000000-0000-4000-8000-000000000003';
+
+select ok(
+  (select onboarding_completed_at is null from public.profiles where id = '91000000-0000-4000-8000-000000000003'),
+  'password setup remains incomplete until the server marker is written'
+);
+
+update auth.users
+set raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'incomplete-server-nonce')
 where id = '91000000-0000-4000-8000-000000000003';
 
 select ok(
   (select onboarding_completed_at is not null from public.profiles where id = '91000000-0000-4000-8000-000000000003'),
-  'password hash change completes previously incomplete onboarding'
+  'server completion marker completes previously incomplete onboarding'
 );
 
 set local role authenticated;
