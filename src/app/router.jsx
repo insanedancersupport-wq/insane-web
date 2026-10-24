@@ -5,8 +5,9 @@ import { MorePage } from './MorePage'
 import { AuthProvider } from '../features/auth/AuthContext'
 import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage'
 import { LoginPage } from '../features/auth/LoginPage'
-import { AdminRoute, ProtectedRoute, PublicOnlyRoute } from '../features/auth/RouteGuards'
+import { AdminRoute, PasswordSetupRoute, ProtectedRoute, PublicOnlyRoute } from '../features/auth/RouteGuards'
 import { ResetPasswordPage } from '../features/auth/ResetPasswordPage'
+import { SetPasswordPage } from '../features/auth/SetPasswordPage'
 import { UsersPage } from '../features/users/UsersPage'
 import { TrainersPage } from '../features/trainers/TrainersPage'
 import { TrainerDetailPage } from '../features/trainers/TrainerDetailPage'
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
         ],
       },
       { path: '/reset-password', element: <ResetPasswordPage /> },
+      {
+        element: <PasswordSetupRoute />,
+        children: [{ path: '/set-password', element: <SetPasswordPage /> }],
+      },
       {
         element: <ProtectedRoute />,
         children: [

@@ -1,5 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
+import { invitationRedirectUrl } from './invitationRedirect.js'
+
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -81,11 +83,17 @@ Deno.serve(async (request) => {
 
   const { data: callerProfile, error: profileError } = await adminClient
     .from('profiles')
-    .select('active, role')
+    .select('active, role, onboarding_completed_at')
     .eq('id', userData.user.id)
     .maybeSingle()
 
-  if (profileError || !callerProfile || !callerProfile.active || callerProfile.role !== 'admin') {
+  if (
+    profileError
+    || !callerProfile
+    || !callerProfile.active
+    || !callerProfile.onboarding_completed_at
+    || callerProfile.role !== 'admin'
+  ) {
     return respond(403, { error: 'Administrator access is required.' })
   }
 
@@ -111,8 +119,16 @@ Deno.serve(async (request) => {
       return respond(400, { error: 'A valid email address, name, and role are required.' })
     }
 
+    let redirectTo: string
+    try {
+      redirectTo = invitationRedirectUrl(Deno.env.get('APP_URL'))
+    } catch {
+      return respond(500, { error: 'User invitations are unavailable.' })
+    }
+
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       data: { full_name: fullName },
+      redirectTo,
     })
 
     if (error || !data.user) {

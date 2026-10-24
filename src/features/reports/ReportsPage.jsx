@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { EmptyState } from '../../components/feedback/EmptyState'
 import { ErrorState } from '../../components/feedback/ErrorState'
@@ -20,15 +20,15 @@ import {
   reportsQueryKey,
 } from './reportsApi'
 import { defaultReportRange, reportsTimezone, validateReportRange } from './reportsDateRange'
+import { collectKeysetPages, CsvExportCancelledError, CsvExportLimitError, downloadCsv, serializeCsv } from './csvExport'
+import { formatAttendanceRatePercent } from './reportsFormatting'
 
 const fiveMinutes = 5 * 60 * 1000
 const pageSize = 25
 
 function attendanceRate(value) {
-  return value == null ? '—' : new Intl.NumberFormat('en-GB', {
-    maximumFractionDigits: 1,
-    style: 'percent',
-  }).format(Number(value))
+  const percentage = formatAttendanceRatePercent(value)
+  return percentage === '' ? '—' : `${percentage}%`
 }
 
 function reportError(error, fallback) {
@@ -237,6 +237,8 @@ export function ReportsPage() {
   const [attendanceValidationError, setAttendanceValidationError] = useState('')
   const [trainerValidationError, setTrainerValidationError] = useState('')
   const [competitionValidationError, setCompetitionValidationError] = useState('')
+  const exportController = useRef(null)
+  const [exportState, setExportState] = useState({ error: '', status: 'idle' })
   const role = profile.role
   const userId = session.user.id
   const studentCursor = studentCursorHistory[studentPageIndex]
@@ -250,6 +252,12 @@ export function ReportsPage() {
   const competitionChartDateValidation = activeReport === 'competition'
     ? validateReportRange(competitionApplied, { requireChartRange: true })
     : ''
+
+  useEffect(() => () => exportController.current?.abort(), [])
+  useEffect(() => {
+    exportController.current?.abort()
+    setExportState({ error: '', status: 'idle' })
+  }, [activeReport, userId])
 
   const groupsQuery = useQuery({ queryKey: ['reports', userId, role, 'groups'], queryFn: listGroups, staleTime: fiveMinutes })
   const studentQuery = useQuery({
@@ -369,6 +377,87 @@ export function ReportsPage() {
     setCompetitionPageIndex((index) => index + 1)
   }
 
+  function exportConfiguration() {
+    if (activeReport === 'student') {
+      return {
+        filename: `student-attendance_${attendanceApplied.startDate}_${attendanceApplied.endDate}.csv`,
+        headers: ['Student', 'Historical Group', 'Present', 'Absent', 'Recovery', 'Recorded Marks', 'Attendance Rate (%)'],
+        load: (signal) => collectKeysetPages({
+          signal,
+          fetchPage: (afterCursor) => getStudentAttendanceReport({ afterCursor, endDate: attendanceApplied.endDate, groupId: attendanceApplied.groupId, pageSize: 100, startDate: attendanceApplied.startDate }),
+        }),
+        rows: (data) => data.map((row) => [row.student_display_name, row.group_name, row.present_count, row.absent_count, row.recovery_count, row.recorded_marks_count, formatAttendanceRatePercent(row.attendance_rate)]),
+        valid: !attendanceTableDateValidation,
+      }
+    }
+    if (activeReport === 'group') {
+      return {
+        filename: `group-attendance_${attendanceApplied.startDate}_${attendanceApplied.endDate}.csv`,
+        headers: ['Group', 'Current Active Students', 'Historical Recorded Students', 'Started Classes', 'Status-Completed Classes', 'Present', 'Absent', 'Recovery', 'Attendance Rate (%)'],
+        load: async () => getGroupAttendanceReport({ endDate: attendanceApplied.endDate, groupId: attendanceApplied.groupId, startDate: attendanceApplied.startDate }),
+        rows: (data) => data.map((row) => [row.group_name, row.current_active_students_count, row.historical_recorded_students_count, row.started_classes_count, row.status_completed_classes_count, row.present_count, row.absent_count, row.recovery_count, formatAttendanceRatePercent(row.attendance_rate)]),
+        valid: !attendanceTableDateValidation,
+      }
+    }
+    if (activeReport === 'trainer') {
+      return {
+        filename: `trainer-activity_${trainerApplied.startDate}_${trainerApplied.endDate}.csv`,
+        headers: ['Trainer', 'Started Classes', 'Status-Completed Classes', 'Future Scheduled Classes', 'Cancelled Classes', 'Distinct Groups Taught', 'Recorded Attendance Marks', 'Present', 'Absent', 'Recovery', 'Attendance Rate (%)'],
+        load: async () => getTrainerActivityReport({ endDate: trainerApplied.endDate, startDate: trainerApplied.startDate }),
+        rows: (data) => data.map((row) => [row.trainer_display_name, row.started_classes_count, row.status_completed_classes_count, row.future_scheduled_classes_count, row.cancelled_classes_count, row.distinct_groups_taught_count, row.recorded_attendance_marks_count, row.present_count, row.absent_count, row.recovery_count, formatAttendanceRatePercent(row.attendance_rate)]),
+        valid: !trainerDateValidation,
+      }
+    }
+    return {
+      filename: `competition-results_${competitionApplied.startDate}_${competitionApplied.endDate}.csv`,
+      headers: ['Competition', 'Competition Date', 'Competition Status', 'Enrolled Participants', 'Result Type', 'Category', 'Team Name', 'Placement', 'Award', 'Result Member Count', 'Displayed Result Members', 'Members Truncated'],
+      load: (signal) => collectKeysetPages({
+        signal,
+        fetchPage: (afterCursor) => getCompetitionResultsReport({ afterCursor, competitionId: competitionApplied.competitionId, endDate: competitionApplied.endDate, pageSize: 100, resultType: competitionApplied.resultType, startDate: competitionApplied.startDate, status: competitionApplied.status }),
+      }),
+      rows: (data) => data.map((row) => {
+        const members = Array.isArray(row.result_member_display_names) ? row.result_member_display_names : []
+        return [row.competition_name, row.competition_date, row.competition_status, row.unique_enrolled_participants_count, row.result_type ?? '', row.category ?? '', row.team_name ?? '', row.placement ?? '', row.award ?? '', row.result_member_count ?? '', members.map((member) => member.display_name).join('; '), members.length < Number(row.result_member_count) ? 'Yes' : 'No']
+      }),
+      valid: !competitionTableDateValidation,
+    }
+  }
+
+  async function exportCsv() {
+    if (exportState.status === 'exporting') return
+    const configuration = exportConfiguration()
+    if (!configuration.valid) {
+      setExportState({ error: 'Choose a valid report date range before exporting.', status: 'error' })
+      return
+    }
+    const controller = new AbortController()
+    exportController.current = controller
+    setExportState({ error: '', status: 'exporting' })
+    try {
+      const data = await configuration.load(controller.signal)
+      if (controller.signal.aborted) return
+      if (!Array.isArray(data) || data.length > 5000) throw new CsvExportLimitError('Exports support at most 5000 data rows. Please narrow your filters.')
+      downloadCsv(configuration.filename, serializeCsv(configuration.headers, configuration.rows(data)))
+      setExportState({ error: '', status: 'success' })
+    } catch (error) {
+      if (error instanceof CsvExportCancelledError || controller.signal.aborted) {
+        if (exportController.current === controller) {
+          setExportState({ error: '', status: 'idle' })
+        }
+        return
+      }
+      if (error instanceof CsvExportLimitError) {
+        setExportState({ error: 'Too many rows match these filters. Please narrow the date range or filters.', status: 'error' })
+      } else if (activeReport === 'trainer' && error?.code === '22023') {
+        setExportState({ error: 'Too many trainers match this period. Please narrow the date range.', status: 'error' })
+      } else {
+        setExportState({ error: 'The CSV export could not be completed. Please try again.', status: 'error' })
+      }
+    } finally {
+      if (exportController.current === controller) exportController.current = null
+    }
+  }
+
   const activeQuery = activeReport === 'student'
     ? studentQuery
     : activeReport === 'group'
@@ -389,6 +478,12 @@ export function ReportsPage() {
       {(activeReport === 'student' || activeReport === 'group') && <><>{groupsQuery.error && <ErrorState description="Groups could not be loaded. You can still run an unfiltered report." title="Unable to load group filter" />}</><ReportFilters draft={attendanceDraft} groups={groupsQuery.data ?? []} onApply={applyAttendanceFilters} onReset={resetAttendanceFilters} onUpdate={(values) => setAttendanceDraft((current) => ({ ...current, ...values }))} validationError={attendanceValidationError} /></>}
       {activeReport === 'trainer' && <TrainerActivityFilters draft={trainerDraft} onApply={applyTrainerFilters} onReset={resetTrainerFilters} onUpdate={(values) => setTrainerDraft((current) => ({ ...current, ...values }))} validationError={trainerValidationError} />}
       {activeReport === 'competition' && <CompetitionFilters draft={competitionDraft} onApply={applyCompetitionFilters} onReset={resetCompetitionFilters} onUpdate={(values) => setCompetitionDraft((current) => ({ ...current, ...values }))} validationError={competitionValidationError} />}
+      <div className="reports-export">
+        <Button disabled={exportState.status === 'exporting'} onClick={() => void exportCsv()}>{exportState.status === 'exporting' ? 'Exporting CSV…' : 'Export CSV'}</Button>
+        {exportState.status === 'exporting' && <Button onClick={() => exportController.current?.abort()} type="button" variant="secondary">Cancel export</Button>}
+        {exportState.status === 'success' && <p role="status">CSV export downloaded.</p>}
+        {exportState.status === 'error' && <p className="form-error" role="alert">{exportState.error}</p>}
+      </div>
       {activeQuery.isLoading && <LoadingState label="Loading attendance report" />}
       {activeQuery.error && <ErrorState action={<Button onClick={() => void activeQuery.refetch()} variant="secondary">Retry</Button>} description={activeReport === 'trainer' && activeQuery.error?.code === '22023' ? 'Too many trainers match this period. Please narrow your filters.' : reportError(activeQuery.error, 'The report could not be loaded.')} title="Unable to load report" />}
       {activeReport === 'student' && activeQuery.data && <StudentReport data={activeQuery.data} onNext={nextStudentPage} onPrevious={() => setStudentPageIndex((index) => index - 1)} page={studentPageIndex + 1} />}
