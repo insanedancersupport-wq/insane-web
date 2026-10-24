@@ -27,6 +27,14 @@ export async function manageUser(payload) {
   })
 
   if (error) {
+    const response = error.context
+    if (response instanceof Response) {
+      const body = await response.json().catch(() => null)
+      if (typeof body?.error === 'string') {
+        throw new Error(body.error)
+      }
+    }
+
     throw new Error('Unable to complete the user administration request.')
   }
 }

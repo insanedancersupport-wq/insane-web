@@ -26,6 +26,10 @@ function parseUserId(userId: unknown) {
   return typeof userId === 'string' && uuidPattern.test(userId) ? userId : null
 }
 
+function parseTrainerId(trainerId: unknown) {
+  return typeof trainerId === 'string' && uuidPattern.test(trainerId) ? trainerId : null
+}
+
 function parseFullName(fullName: unknown) {
   if (typeof fullName !== 'string') {
     return null
@@ -117,8 +121,24 @@ Deno.serve(async (request) => {
     const fullName = parseFullName(payload.fullName)
     const role = parseRole(payload.role)
 
-    if (!emailPattern.test(email) || !fullName || !role) {
+    const trainerId = role === 'trainer' ? parseTrainerId(payload.trainerId) : null
+
+    if (!emailPattern.test(email) || !fullName || !role || (role === 'trainer' && !trainerId)) {
       return respond(400, { error: 'A valid email address, name, and role are required.' })
+    }
+
+    if (trainerId) {
+      const { data: trainer, error: trainerError } = await adminClient
+        .from('trainers')
+        .select('id')
+        .eq('id', trainerId)
+        .eq('active', true)
+        .is('profile_id', null)
+        .maybeSingle()
+
+      if (trainerError || !trainer) {
+        return respond(400, { error: 'Select an active Trainer record that is not linked to another account.' })
+      }
     }
 
     let redirectTo: string
@@ -148,6 +168,21 @@ Deno.serve(async (request) => {
       }
     }
 
+    if (trainerId) {
+      const { data: linkedTrainer, error: linkError } = await adminClient
+        .from('trainers')
+        .update({ profile_id: data.user.id })
+        .eq('id', trainerId)
+        .eq('active', true)
+        .is('profile_id', null)
+        .select('id')
+        .maybeSingle()
+
+      if (linkError || !linkedTrainer) {
+        return respond(500, { error: 'The invitation was created, but the selected Trainer record could not be linked. Link it from Users after the record is available.' })
+      }
+    }
+
     return respond(201, { success: true })
   }
 
@@ -162,7 +197,7 @@ Deno.serve(async (request) => {
 
   const { data: targetProfile, error: targetProfileError } = await adminClient
     .from('profiles')
-    .select('id')
+    .select('id, role')
     .eq('id', targetUserId)
     .maybeSingle()
 
@@ -172,6 +207,42 @@ Deno.serve(async (request) => {
 
   if (!targetProfile) {
     return respond(404, { error: 'The target user was not found.' })
+  }
+
+  if (action === 'link-trainer') {
+    const trainerId = parseTrainerId(payload.trainerId)
+    if (!trainerId || targetProfile.role !== 'trainer') {
+      return respond(400, { error: 'A valid Trainer record is required.' })
+    }
+
+    const { data: existingTrainer, error: existingTrainerError } = await adminClient
+      .from('trainers')
+      .select('id')
+      .eq('profile_id', targetUserId)
+      .maybeSingle()
+
+    if (existingTrainerError) {
+      return respond(500, { error: 'Unable to verify the target Trainer association.' })
+    }
+
+    if (existingTrainer) {
+      return respond(409, { error: 'This user is already linked to another Trainer record.' })
+    }
+
+    const { data: trainer, error: linkError } = await adminClient
+      .from('trainers')
+      .update({ profile_id: targetUserId })
+      .eq('id', trainerId)
+      .eq('active', true)
+      .is('profile_id', null)
+      .select('id')
+      .maybeSingle()
+
+    if (linkError || !trainer) {
+      return respond(400, { error: 'Select an active Trainer record that is not linked to another account.' })
+    }
+
+    return respond(200, { success: true })
   }
 
   if (action === 'update') {
