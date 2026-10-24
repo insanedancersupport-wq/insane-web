@@ -9,6 +9,7 @@ import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { AppShell } from '../../components/layout/AppShell'
 import { useAuth } from '../auth/AuthContext'
+import { listTrainers } from '../trainers/trainersApi'
 import { listUsers, manageUser } from './usersApi'
 
 export function UsersPage() {
@@ -18,13 +19,20 @@ export function UsersPage() {
   const [error, setError] = useState('')
   const [fullName, setFullName] = useState('')
   const [role, setRole] = useState('trainer')
+  const [trainerId, setTrainerId] = useState('')
+  const [trainerLinks, setTrainerLinks] = useState({})
   const { data: users, error: usersError, isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: listUsers,
   })
+  const trainersQuery = useQuery({ queryKey: ['trainers'], queryFn: listTrainers })
+  const availableTrainers = trainersQuery.data?.filter((trainer) => trainer.active && !trainer.profile_id) ?? []
   const mutation = useMutation({
     mutationFn: manageUser,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      queryClient.invalidateQueries({ queryKey: ['trainers'] })
+    },
   })
 
   async function runAction(payload) {
@@ -32,17 +40,24 @@ export function UsersPage() {
 
     try {
       await mutation.mutateAsync(payload)
+      return true
     } catch (actionError) {
       setError(actionError.message)
+      return false
     }
   }
 
   async function handleInvite(event) {
     event.preventDefault()
-    await runAction({ action: 'invite', email, fullName, role })
+    const succeeded = await runAction({ action: 'invite', email, fullName, role, ...(role === 'trainer' ? { trainerId } : {}) })
+    if (!succeeded) {
+      return
+    }
+
     setEmail('')
     setFullName('')
     setRole('trainer')
+    setTrainerId('')
   }
 
   function handleDelete(user) {
@@ -89,6 +104,17 @@ export function UsersPage() {
               <option value="admin">Administrator</option>
             </select>
           </label>
+          {role === 'trainer' && (
+            <label className="field" htmlFor="invited-trainer">
+              <span className="field__label">Trainer record</span>
+              <select className="field__input" id="invited-trainer" onChange={(event) => setTrainerId(event.target.value)} required value={trainerId}>
+                <option value="">Select an active Trainer record</option>
+                {availableTrainers.map((trainer) => (
+                  <option key={trainer.id} value={trainer.id}>{trainer.first_name} {trainer.last_name}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <Button disabled={mutation.isPending} type="submit">
             {mutation.isPending ? 'Sending invitation...' : 'Send invitation'}
           </Button>
@@ -137,6 +163,29 @@ export function UsersPage() {
                   >
                     {user.active ? 'Deactivate' : 'Activate'}
                   </Button>
+                  {user.role === 'trainer' && (
+                    <>
+                      <select
+                        aria-label={`Trainer record for ${user.full_name}`}
+                        className="field__input"
+                        disabled={mutation.isPending || availableTrainers.length === 0}
+                        onChange={(event) => setTrainerLinks((current) => ({ ...current, [user.id]: event.target.value }))}
+                        value={trainerLinks[user.id] ?? ''}
+                      >
+                        <option value="">Select Trainer record</option>
+                        {availableTrainers.map((trainer) => (
+                          <option key={trainer.id} value={trainer.id}>{trainer.first_name} {trainer.last_name}</option>
+                        ))}
+                      </select>
+                      <Button
+                        disabled={mutation.isPending || !trainerLinks[user.id]}
+                        onClick={() => void runAction({ action: 'link-trainer', trainerId: trainerLinks[user.id], userId: user.id })}
+                        variant="secondary"
+                      >
+                        Link trainer
+                      </Button>
+                    </>
+                  )}
                   <Button
                     disabled={isCurrentUser || mutation.isPending}
                     onClick={() => handleDelete(user)}

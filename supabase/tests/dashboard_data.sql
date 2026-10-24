@@ -2,6 +2,13 @@ begin;
 
 select plan(11);
 
+create temporary table dashboard_baseline as
+select count(*)::bigint as active_trainers
+from public.trainers
+where active;
+
+grant select on dashboard_baseline to authenticated;
+
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
@@ -141,7 +148,7 @@ select results_eq(
       (now() at time zone 'Europe/Bucharest')::date - 1,
       (now() at time zone 'Europe/Bucharest')::date
     )$$,
-  $$values (4::bigint, 2::bigint, 2::bigint, 1::bigint, 2::bigint, 3::bigint, 2::numeric / 3::numeric, 2::bigint, 3::bigint)$$,
+  $$select 4::bigint, active_trainers + 2, 2::bigint, 1::bigint, 2::bigint, 3::bigint, 2::numeric / 3::numeric, 2::bigint, 3::bigint from dashboard_baseline$$,
   'admin receives school-wide aggregates with normal recorded attendance only'
 );
 
