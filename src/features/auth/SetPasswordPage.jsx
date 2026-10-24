@@ -7,7 +7,7 @@ import { LoadingState } from '../../components/feedback/LoadingState'
 import { useAuth } from './AuthContext'
 
 export function SetPasswordPage() {
-  const { isLoading, refreshProfile, session, updatePassword } = useAuth()
+  const { completeInitialPassword, isLoading, refreshProfile, session } = useAuth()
   const navigate = useNavigate()
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -39,7 +39,7 @@ export function SetPasswordPage() {
     setIsSubmitting(true)
 
     try {
-      await updatePassword(password)
+      await completeInitialPassword(password)
       const refreshedProfile = await refreshProfile()
 
       if (!refreshedProfile.onboarding_completed_at) {

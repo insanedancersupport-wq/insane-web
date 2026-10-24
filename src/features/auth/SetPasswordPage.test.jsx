@@ -24,12 +24,12 @@ function renderPage(auth, initialEntry = '/set-password') {
 function createAuth(overrides = {}) {
   return {
     isLoading: false,
+    completeInitialPassword: vi.fn().mockResolvedValue(undefined),
     refreshProfile: vi.fn().mockResolvedValue({
       active: true,
       onboarding_completed_at: '2026-10-24T12:00:00Z',
     }),
     session: { user: { id: 'invited-user-id' } },
-    updatePassword: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }
@@ -48,7 +48,7 @@ describe('SetPasswordPage', () => {
     await submit('password-one', 'password-two')
 
     expect(screen.getByRole('alert')).toHaveTextContent('Passwords do not match.')
-    expect(auth.updatePassword).not.toHaveBeenCalled()
+    expect(auth.completeInitialPassword).not.toHaveBeenCalled()
   })
 
   it('shows the existing eight-character password policy', async () => {
@@ -58,18 +58,18 @@ describe('SetPasswordPage', () => {
     await submit('short', 'short')
 
     expect(screen.getByRole('alert')).toHaveTextContent('Password must be at least 8 characters long.')
-    expect(auth.updatePassword).not.toHaveBeenCalled()
+    expect(auth.completeInitialPassword).not.toHaveBeenCalled()
   })
 
   it('shows password update errors and remains on setup', async () => {
     const auth = createAuth({
-      updatePassword: vi.fn().mockRejectedValue(new Error('Unable to update your password. Please try again.')),
+      completeInitialPassword: vi.fn().mockRejectedValue(new Error('Unable to set your password. Please try again.')),
     })
     renderPage(auth)
 
     await submit('secure-password', 'secure-password')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to update your password. Please try again.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Unable to set your password. Please try again.')
     expect(auth.refreshProfile).not.toHaveBeenCalled()
     expect(screen.getByRole('heading', { name: 'Set your password' })).toBeInTheDocument()
   })
@@ -83,7 +83,7 @@ describe('SetPasswordPage', () => {
     await submit('secure-password', 'secure-password')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('account setup is still pending')
-    expect(auth.updatePassword).toHaveBeenCalledWith('secure-password')
+    expect(auth.completeInitialPassword).toHaveBeenCalledWith('secure-password')
     expect(auth.refreshProfile).toHaveBeenCalledOnce()
     expect(screen.queryByText('Workspace')).not.toBeInTheDocument()
   })
@@ -107,7 +107,7 @@ describe('SetPasswordPage', () => {
     await submit('secure-password', 'secure-password')
 
     await waitFor(() => expect(screen.getByText('Workspace')).toBeInTheDocument())
-    expect(auth.updatePassword).toHaveBeenCalledWith('secure-password')
+    expect(auth.completeInitialPassword).toHaveBeenCalledWith('secure-password')
     expect(auth.refreshProfile).toHaveBeenCalledOnce()
   })
 

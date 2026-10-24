@@ -178,6 +178,16 @@ export function AuthProvider({ children }) {
           throw new Error('Unable to update your password. Please try again.')
         }
       },
+      async completeInitialPassword(password) {
+        const client = configuredClient()
+        const { error } = await client.functions.invoke('complete-initial-password', {
+          body: { password },
+        })
+
+        if (error) {
+          throw new Error('Unable to set your password. Please try again.')
+        }
+      },
       async refreshProfile() {
         if (!state.session) {
           throw new Error('Your session has expired. Please sign in again.')

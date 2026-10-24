@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(23);
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -42,11 +42,15 @@ insert into public.rooms (id, name)
 values ('93000000-0000-4000-8000-000000000001', 'Onboarding Room');
 
 update auth.users
-set encrypted_password = 'completed-admin-password'
+set
+  encrypted_password = 'completed-admin-password',
+  raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'admin-server-nonce')
 where id = '91000000-0000-4000-8000-000000000001';
 
 update auth.users
-set encrypted_password = 'completed-trainer-password'
+set
+  encrypted_password = 'completed-trainer-password',
+  raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'trainer-server-nonce')
 where id = '91000000-0000-4000-8000-000000000002';
 
 select ok(
@@ -143,7 +147,18 @@ select ok(
 );
 
 update auth.users
-set encrypted_password = 'completed-incomplete-password'
+set encrypted_password = 'untrusted-password-change'
+where id = '91000000-0000-4000-8000-000000000003';
+
+select ok(
+  (select onboarding_completed_at is null from public.profiles where id = '91000000-0000-4000-8000-000000000003'),
+  'invitation acceptance or browser password changes without a server marker do not complete onboarding'
+);
+
+update auth.users
+set
+  encrypted_password = 'completed-incomplete-password',
+  raw_app_meta_data = raw_app_meta_data || jsonb_build_object('initial_password_setup_nonce', 'incomplete-server-nonce')
 where id = '91000000-0000-4000-8000-000000000003';
 
 select ok(
