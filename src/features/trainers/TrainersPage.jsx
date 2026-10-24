@@ -14,6 +14,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { createTrainer, listAvailableProfiles, listTrainers, updateTrainer } from './trainersApi'
 
 const trainerSchema = z.object({
@@ -89,6 +90,7 @@ export function TrainersPage() {
       : createTrainer(values)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainers'] })
+      invalidateDashboardQueries(queryClient)
       setEditingTrainer(null)
     },
   })
@@ -107,6 +109,7 @@ export function TrainersPage() {
     try {
       await updateTrainer({ id: trainer.id, values: { active: !trainer.active } })
       await queryClient.invalidateQueries({ queryKey: ['trainers'] })
+      await invalidateDashboardQueries(queryClient)
     } catch (updateError) {
       setError(updateError.message)
     }

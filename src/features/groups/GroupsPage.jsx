@@ -15,6 +15,7 @@ import { Card } from '../../components/ui/Card'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import { useAuth } from '../auth/AuthContext'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { listRooms } from '../rooms/roomsApi'
 import {
   createGroup,
@@ -184,6 +185,7 @@ export function GroupsPage() {
       queryClient.invalidateQueries({ queryKey: ['groups'] })
       queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
       queryClient.invalidateQueries({ queryKey: ['group-trainers', groupId] })
+      invalidateDashboardQueries(queryClient)
       setEditingGroup(null)
     },
   })
@@ -197,6 +199,7 @@ export function GroupsPage() {
       if (saveError.entitySaved) {
         await queryClient.invalidateQueries({ queryKey: ['groups'] })
         await queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
+        await invalidateDashboardQueries(queryClient)
         setEditingGroup(null)
       }
       setError(saveError.message)
@@ -209,6 +212,7 @@ export function GroupsPage() {
       await updateGroup({ id: group.id, values: { active: !group.active } })
       await queryClient.invalidateQueries({ queryKey: ['groups'] })
       await queryClient.invalidateQueries({ queryKey: ['groups-with-details'] })
+      await invalidateDashboardQueries(queryClient)
     } catch (updateError) {
       setError(updateError.message)
     }

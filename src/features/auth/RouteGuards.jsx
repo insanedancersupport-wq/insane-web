@@ -44,7 +44,7 @@ export function PublicOnlyRoute() {
     return <LoadingState label="Checking your session" />
   }
 
-  return session ? <Navigate replace to="/app" /> : <Outlet />
+  return session ? <Navigate replace to="/app/dashboard" /> : <Outlet />
 }
 
 export function AdminRoute() {

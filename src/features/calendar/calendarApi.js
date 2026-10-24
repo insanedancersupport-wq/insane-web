@@ -84,7 +84,9 @@ export async function getAuthoritativeSchoolSettings() {
 }
 
 export async function listScheduleEntries({
+  excludeCancelled,
   entryType,
+  limit,
   groupId,
   rangeEnd,
   rangeStart,
@@ -101,6 +103,10 @@ export async function listScheduleEntries({
     query = query.eq('entry_type', entryType)
   }
 
+  if (excludeCancelled) {
+    query = query.neq('status', 'cancelled')
+  }
+
   if (groupId) {
     query = query.eq('group_id', groupId)
   }
@@ -111,6 +117,10 @@ export async function listScheduleEntries({
 
   if (trainerId) {
     query = query.eq('trainer_id', trainerId)
+  }
+
+  if (limit) {
+    query = query.limit(limit)
   }
 
   const { data, error } = await query

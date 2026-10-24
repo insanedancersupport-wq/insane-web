@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { formatSchoolDate, formatSchoolTime } from '../../utils/scheduleDateTime'
 import { useAuth } from '../auth/AuthContext'
+import { invalidateDashboardQueries } from '../dashboard/dashboardApi'
 import { getAuthoritativeSchoolSettings } from '../calendar/calendarApi'
 import { listTrainers } from '../trainers/trainersApi'
 import {
@@ -105,6 +106,7 @@ export function AttendancePage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['attendance-records', scheduleEntryId] }),
         queryClient.invalidateQueries({ queryKey: ['monthly-attendance'] }),
+        invalidateDashboardQueries(queryClient),
       ])
     },
   })
