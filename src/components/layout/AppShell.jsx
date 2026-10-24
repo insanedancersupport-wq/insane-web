@@ -1,5 +1,6 @@
 import {
   Bell,
+  BarChart3,
   CalendarDays,
   ChevronRight,
   LayoutDashboard,
@@ -21,6 +22,7 @@ const navigationItems = [
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
   { icon: Trophy, label: 'Competitions', to: '/app/competitions' },
+  { icon: BarChart3, label: 'Reports', to: '/app/reports' },
   { icon: MoreHorizontal, label: 'More', to: '/app/more' },
 ]
 

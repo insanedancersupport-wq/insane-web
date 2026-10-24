@@ -21,6 +21,7 @@ import { AttendanceMatrixPage } from '../features/attendance/AttendanceMatrixPag
 import { CompetitionsPage } from '../features/competitions/CompetitionsPage'
 import { CompetitionDetailsPage } from '../features/competitions/CompetitionDetailsPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
+import { ReportsPage } from '../features/reports/ReportsPage'
 
 export const router = createBrowserRouter([
   {
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: '/app/competitions/:competitionId', element: <CompetitionDetailsPage /> },
           { path: '/app/more', element: <MorePage /> },
           { path: '/app/dashboard', element: <DashboardPage /> },
+          { path: '/app/reports', element: <ReportsPage /> },
           { path: '/app', element: <Navigate replace to="/app/dashboard" /> },
           { path: '/app/*', element: <App /> },
         ],

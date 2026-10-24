@@ -24,6 +24,7 @@ export function MorePage() {
           </>
         )}
         <Card><Link to="/app/attendance">Attendance</Link><p>Review monthly class attendance.</p></Card>
+        <Card><Link to="/app/reports">Reports</Link><p>Review attendance reporting and trends.</p></Card>
         <Card><Link to="/app/competitions">Competitions</Link><p>Review competition plans and registered students.</p></Card>
         <Card><Link to="/app/groups">Groups</Link><p>Review dance groups and assignments.</p></Card>
         <Card><Link to="/app/students">Students</Link><p>Review student records.</p></Card>

@@ -11,6 +11,7 @@ function renderShell(auth, initialEntry = '/app/dashboard') {
       <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route element={<AppShell title="Dashboard"><p>Dashboard content</p></AppShell>} path="/app/dashboard" />
+          <Route element={<p>Reports page</p>} path="/app/reports" />
           <Route element={<p>Login page</p>} path="/login" />
         </Routes>
       </MemoryRouter>
@@ -68,5 +69,25 @@ describe('AppShell user menu', () => {
 
     await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1))
     expect(await screen.findByText('Login page')).toBeInTheDocument()
+  })
+
+  it('offers Reports navigation to authenticated admins and trainers', () => {
+    const admin = {
+      profile: { full_name: 'Alex Admin', role: 'admin' },
+      session: { user: { email: 'admin@example.test' } },
+      signOut: vi.fn(),
+    }
+    const trainer = {
+      profile: { full_name: 'Alex Trainer', role: 'trainer' },
+      session: { user: { email: 'trainer@example.test' } },
+      signOut: vi.fn(),
+    }
+
+    const { unmount } = renderShell(admin)
+    expect(screen.getAllByRole('link', { name: 'Reports' }).every((link) => link.getAttribute('href') === '/app/reports')).toBe(true)
+    unmount()
+
+    renderShell(trainer)
+    expect(screen.getAllByRole('link', { name: 'Reports' }).every((link) => link.getAttribute('href') === '/app/reports')).toBe(true)
   })
 })
