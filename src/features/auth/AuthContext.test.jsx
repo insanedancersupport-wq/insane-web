@@ -125,6 +125,23 @@ describe('AuthProvider', () => {
     expect(queryClient.getQueryData(['dashboard', 'new-user-id'])).toBeUndefined()
   })
 
+  it('replaces an existing session when Supabase emits an invitation session', async () => {
+    render(
+      <AuthProvider>
+        <SessionConsumer />
+      </AuthProvider>,
+    )
+    await screen.findByText('user-id:trainer')
+    queryClient.setQueryData(['reports', 'user-id', 'trainer'], { student: 'Existing admin data' })
+
+    await act(async () => {
+      authStateChange('SIGNED_IN', { user: { id: 'invited-user-id' } })
+    })
+
+    expect(await screen.findByText('invited-user-id:trainer')).toBeInTheDocument()
+    expect(queryClient.getQueryData(['reports', 'user-id', 'trainer'])).toBeUndefined()
+  })
+
   afterEach(() => {
     cleanup()
     queryClient.clear()
