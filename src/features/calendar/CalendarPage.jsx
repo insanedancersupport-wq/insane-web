@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { AppShell } from '../../components/layout/AppShell'
@@ -13,6 +13,7 @@ import { LoadingState } from '../../components/feedback/LoadingState'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { CalendarTemporalPicker } from '../../components/ui/CalendarTemporalPicker'
 import { Dialog } from '../../components/ui/Dialog'
 import { Input } from '../../components/ui/Input'
 import {
@@ -154,6 +155,7 @@ function ResourceSelect({ children, id, label, register }) {
 
 function EntryForm({ entry, formId, groups, onSubmit, rooms, selectedDate, timezone, trainers }) {
   const {
+    control,
     formState: { errors },
     handleSubmit,
     register,
@@ -178,11 +180,23 @@ function EntryForm({ entry, formId, groups, onSubmit, rooms, selectedDate, timez
       <ResourceSelect id="schedule-entry-type" label="Type" register={register('entry_type')}>
         {scheduleTypes.map((type) => <option key={type} value={type}>{type}</option>)}
       </ResourceSelect>
-      <Input label="Date" type="date" {...register('date')} />
+      <Controller
+        control={control}
+        name="date"
+        render={({ field }) => <CalendarTemporalPicker id="schedule-entry-date" label="Date" onChange={field.onChange} type="date" value={field.value} />}
+      />
       {errors.date && <p className="form-error" role="alert">{errors.date.message}</p>}
       <div className="calendar-form-times">
-        <Input label="Start time" type="time" {...register('start_time')} />
-        <Input label="End time" type="time" {...register('end_time')} />
+        <Controller
+          control={control}
+          name="start_time"
+          render={({ field }) => <CalendarTemporalPicker id="schedule-entry-start-time" label="Start time" onChange={field.onChange} type="time" value={field.value} />}
+        />
+        <Controller
+          control={control}
+          name="end_time"
+          render={({ field }) => <CalendarTemporalPicker id="schedule-entry-end-time" label="End time" onChange={field.onChange} type="time" value={field.value} />}
+        />
       </div>
       {(errors.start_time || errors.end_time) && (
         <p className="form-error" role="alert">{errors.start_time?.message || errors.end_time?.message}</p>

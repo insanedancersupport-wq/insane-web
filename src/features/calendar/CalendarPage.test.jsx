@@ -28,6 +28,14 @@ vi.mock('./calendarApi', () => ({
 vi.mock('../groups/groupsApi', () => ({ listGroups: vi.fn() }))
 vi.mock('../rooms/roomsApi', () => ({ listRooms: vi.fn() }))
 vi.mock('../trainers/trainersApi', () => ({ listTrainers: vi.fn() }))
+vi.mock('../../components/ui/CalendarTemporalPicker', () => ({
+  CalendarTemporalPicker: ({ id, label, onChange, type, value }) => (
+    <label htmlFor={id}>
+      <span>{label}</span>
+      <input id={id} onChange={(event) => onChange(event.target.value)} type={type} value={value} />
+    </label>
+  ),
+}))
 
 const group = { active: true, id: 'group-id', name: 'Junior Crew' }
 const room = { active: true, id: 'room-id', name: 'Studio A' }
