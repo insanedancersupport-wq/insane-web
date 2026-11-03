@@ -12,7 +12,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 
 import { Button } from '../ui/Button'
 import { useAuth } from '../../features/auth/AuthContext'
@@ -34,6 +34,14 @@ const administrationItems = [
   { icon: Users, label: 'Users', to: '/app/users' },
 ]
 
+const mobileNavigationPaths = new Set([
+  '/app/dashboard',
+  '/app/calendar',
+  '/app/tasks',
+  '/app/groups',
+  '/app/more',
+])
+
 function Brand() {
   return (
     <div aria-label="Insane Dance Center" className="brand">
@@ -48,16 +56,29 @@ function Brand() {
 
 function Navigation({ variant }) {
   const { profile } = useAuth()
+  const { pathname } = useLocation()
   const items = variant === 'sidebar' && profile?.role === 'admin'
     ? [...navigationItems, ...administrationItems]
-    : navigationItems
+    : variant === 'bottom'
+      ? navigationItems.filter(({ to }) => mobileNavigationPaths.has(to))
+      : navigationItems
+
+  function isItemActive(item, isActive) {
+    if (variant !== 'bottom' || item.to !== '/app/more') {
+      return isActive
+    }
+
+    return isActive || !navigationItems
+      .filter(({ to }) => to !== '/app/more')
+      .some(({ to }) => pathname === to || pathname.startsWith(`${to}/`))
+  }
 
   return (
     <nav aria-label="Primary navigation" className={`navigation navigation--${variant}`}>
       {items.map(({ icon: Icon, label, to }) => (
         <NavLink
           className={({ isActive }) =>
-            `navigation__link${isActive ? ' navigation__link--active' : ''}`
+            `navigation__link${isItemActive({ to }, isActive) ? ' navigation__link--active' : ''}`
           }
           end={to === '/app/dashboard'}
           key={to}
