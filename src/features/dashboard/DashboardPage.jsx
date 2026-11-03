@@ -8,6 +8,7 @@ import { LoadingState } from '../../components/feedback/LoadingState'
 import { AppShell } from '../../components/layout/AppShell'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { TemporalPickerField } from '../../components/ui/TemporalPickerField'
 import {
   addSchoolDays,
   formatSchoolDate,
@@ -118,26 +119,8 @@ function DateRangeFilter({ onApply, preset, range, setPreset, setRange }) {
       </label>
       {preset === 'custom' && (
         <form className="dashboard-custom-range" onSubmit={applyCustomRange}>
-          <label className="field" htmlFor="dashboard-start-date">
-            <span className="field__label">Start date</span>
-            <input
-              className="field__input"
-              id="dashboard-start-date"
-              onChange={(event) => setRange((current) => ({ ...current, startDate: event.target.value }))}
-              type="date"
-              value={range.startDate}
-            />
-          </label>
-          <label className="field" htmlFor="dashboard-end-date">
-            <span className="field__label">End date</span>
-            <input
-              className="field__input"
-              id="dashboard-end-date"
-              onChange={(event) => setRange((current) => ({ ...current, endDate: event.target.value }))}
-              type="date"
-              value={range.endDate}
-            />
-          </label>
+          <TemporalPickerField id="dashboard-start-date" label="Start date" onChange={(event) => setRange((current) => ({ ...current, startDate: event.target.value }))} type="date" value={range.startDate} />
+          <TemporalPickerField id="dashboard-end-date" label="End date" onChange={(event) => setRange((current) => ({ ...current, endDate: event.target.value }))} type="date" value={range.endDate} />
           <Button type="submit" variant="secondary">Apply range</Button>
           {validationError && <p className="form-error" role="alert">{validationError}</p>}
         </form>
