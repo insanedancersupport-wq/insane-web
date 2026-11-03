@@ -173,6 +173,7 @@ export function AppShell({ children, title = 'Home' }) {
             <Menu aria-hidden="true" size={24} />
           </button>
           <Brand />
+          <img alt="Insane Dance Center" className="top-header__logo" src="/insane-dance-center-brush-logo.png" />
           <button aria-label="Notifications" className="icon-button notification-button" type="button">
             <Bell aria-hidden="true" size={23} />
             <span aria-label="3 unread notifications" className="notification-button__badge">3</span>

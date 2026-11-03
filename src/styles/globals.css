@@ -104,6 +104,7 @@ a:focus-visible {
 }
 
 .top-header {
+  position: relative;
   display: grid;
   grid-template-columns: 44px 1fr 44px 44px;
   align-items: center;
@@ -118,6 +119,10 @@ a:focus-visible {
   margin: var(--space-2) 0 0;
   font-size: 1.25rem;
   line-height: 1.4;
+}
+
+.top-header__logo {
+  display: none;
 }
 
 .brand {
@@ -1371,6 +1376,22 @@ a:focus-visible {
   margin-top: 0.15rem;
 }
 
+@media (min-width: 640px) and (max-width: 899px) {
+  .top-header .brand {
+    display: none;
+  }
+
+  .top-header__logo {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 160px;
+    height: auto;
+    transform: translate(-50%, -50%);
+  }
+}
+
 @media (min-width: 900px) {
   .app-shell {
     display: grid;
@@ -1437,6 +1458,16 @@ a:focus-visible {
   .top-header__menu,
   .top-header .brand {
     display: none;
+  }
+
+  .top-header__logo {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 218px;
+    height: auto;
+    transform: translate(-50%, -50%);
   }
 
   .top-header h1 {
