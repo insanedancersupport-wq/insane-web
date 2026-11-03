@@ -29,6 +29,7 @@ describe('AppShell user menu', () => {
       signOut: vi.fn(),
     })
 
+    expect(screen.getByRole('img', { name: 'Insane Dance Center' })).toHaveAttribute('src', '/insane-dance-center-brush-logo.png')
     expect(screen.getByRole('button', { name: 'Open user menu' })).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(screen.getByRole('button', { name: 'Open user menu' }))
 

@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ChevronRight,
   LayoutDashboard,
+  ListTodo,
   Menu,
   MoreHorizontal,
   Trophy,
@@ -19,6 +20,7 @@ import { useAuth } from '../../features/auth/AuthContext'
 const navigationItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/app/dashboard' },
   { icon: CalendarDays, label: 'Calendar', to: '/app/calendar' },
+  { icon: ListTodo, label: 'Tasks', to: '/app/tasks' },
   { icon: Users, label: 'Groups', to: '/app/groups' },
   { icon: UserRound, label: 'Students', to: '/app/students' },
   { icon: Trophy, label: 'Competitions', to: '/app/competitions' },
@@ -171,6 +173,7 @@ export function AppShell({ children, title = 'Home' }) {
             <Menu aria-hidden="true" size={24} />
           </button>
           <Brand />
+          <img alt="Insane Dance Center" className="top-header__logo" src="/insane-dance-center-brush-logo.png" />
           <button aria-label="Notifications" className="icon-button notification-button" type="button">
             <Bell aria-hidden="true" size={23} />
             <span aria-label="3 unread notifications" className="notification-button__badge">3</span>
