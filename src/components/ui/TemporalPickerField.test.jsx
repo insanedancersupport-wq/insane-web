@@ -32,9 +32,11 @@ describe('TemporalPickerField', () => {
     const input = screen.getByLabelText('Activity date')
     const showPicker = vi.fn()
     Object.defineProperty(input, 'showPicker', { configurable: true, value: showPicker })
-    fireEvent.pointerDown(screen.getByText('Select date'))
+    const control = screen.getByText('Select date')
+    fireEvent.pointerDown(control)
 
     expect(showPicker).toHaveBeenCalledTimes(1)
+    expect(fireEvent.click(control)).toBe(false)
   })
 
   it('formats month values without timezone conversion', () => {

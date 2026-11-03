@@ -66,6 +66,7 @@ export const TemporalPickerField = forwardRef(function TemporalPickerField({
   ...inputProps
 }, forwardedRef) {
   const inputRef = useRef(null)
+  const suppressNativeClickRef = useRef(false)
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue ?? '')
   const currentValue = value ?? uncontrolledValue
 
@@ -95,6 +96,7 @@ export const TemporalPickerField = forwardRef(function TemporalPickerField({
     if (typeof input.showPicker === 'function') {
       try {
         input.showPicker()
+        suppressNativeClickRef.current = true
         event.preventDefault()
         return
       } catch {
@@ -104,13 +106,23 @@ export const TemporalPickerField = forwardRef(function TemporalPickerField({
 
     if (event.target !== input) {
       input.click()
+      event.preventDefault()
     }
+  }
+
+  function suppressDuplicateNativeClick(event) {
+    if (!suppressNativeClickRef.current) {
+      return
+    }
+
+    suppressNativeClickRef.current = false
+    event.preventDefault()
   }
 
   return (
     <label className={`field temporal-picker-field ${className}`.trim()} htmlFor={id}>
       {label && <span className="field__label">{label}</span>}
-      <span className={`temporal-picker${disabled ? ' temporal-picker--disabled' : ''}${currentValue ? '' : ' temporal-picker--empty'}`} onPointerDown={openNativePicker}>
+      <span className={`temporal-picker${disabled ? ' temporal-picker--disabled' : ''}${currentValue ? '' : ' temporal-picker--empty'}`} onClick={suppressDuplicateNativeClick} onPointerDown={openNativePicker}>
         <Icon type={type} />
         <span aria-hidden="true" className="temporal-picker__value">{displayValue(type, currentValue)}</span>
         <input
