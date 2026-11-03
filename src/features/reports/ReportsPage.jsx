@@ -7,6 +7,7 @@ import { ErrorState } from '../../components/feedback/ErrorState'
 import { LoadingState } from '../../components/feedback/LoadingState'
 import { AppShell } from '../../components/layout/AppShell'
 import { Button } from '../../components/ui/Button'
+import { TemporalPickerField } from '../../components/ui/TemporalPickerField'
 import { formatSchoolDate } from '../../utils/scheduleDateTime'
 import { useAuth } from '../auth/AuthContext'
 import { listGroups } from '../groups/groupsApi'
@@ -85,8 +86,8 @@ function TrendChart({ rows }) {
 function ReportFilters({ draft, groups, onApply, onReset, onUpdate, validationError }) {
   return (
     <form className="reports-filters" onSubmit={onApply}>
-      <label className="field" htmlFor="reports-start-date"><span className="field__label">Start date</span><input className="field__input" id="reports-start-date" onChange={(event) => onUpdate({ startDate: event.target.value })} type="date" value={draft.startDate} /></label>
-      <label className="field" htmlFor="reports-end-date"><span className="field__label">End date</span><input className="field__input" id="reports-end-date" onChange={(event) => onUpdate({ endDate: event.target.value })} type="date" value={draft.endDate} /></label>
+      <TemporalPickerField id="reports-start-date" label="Start date" onChange={(event) => onUpdate({ startDate: event.target.value })} type="date" value={draft.startDate} />
+      <TemporalPickerField id="reports-end-date" label="End date" onChange={(event) => onUpdate({ endDate: event.target.value })} type="date" value={draft.endDate} />
       <label className="field" htmlFor="reports-group"><span className="field__label">Group</span>
         <select className="field__input" id="reports-group" onChange={(event) => onUpdate({ groupId: event.target.value || null })} value={draft.groupId ?? ''}>
           <option value="">All authorized groups</option>
@@ -144,8 +145,8 @@ function GroupReport({ data }) {
 function TrainerActivityFilters({ draft, onApply, onReset, onUpdate, validationError }) {
   return (
     <form className="reports-filters" onSubmit={onApply}>
-      <label className="field" htmlFor="trainer-reports-start-date"><span className="field__label">Start date</span><input className="field__input" id="trainer-reports-start-date" onChange={(event) => onUpdate({ startDate: event.target.value })} type="date" value={draft.startDate} /></label>
-      <label className="field" htmlFor="trainer-reports-end-date"><span className="field__label">End date</span><input className="field__input" id="trainer-reports-end-date" onChange={(event) => onUpdate({ endDate: event.target.value })} type="date" value={draft.endDate} /></label>
+      <TemporalPickerField id="trainer-reports-start-date" label="Start date" onChange={(event) => onUpdate({ startDate: event.target.value })} type="date" value={draft.startDate} />
+      <TemporalPickerField id="trainer-reports-end-date" label="End date" onChange={(event) => onUpdate({ endDate: event.target.value })} type="date" value={draft.endDate} />
       <p className="reports-filters__note">Trainer filtering is unavailable because the current client API has no bounded authorized trainer search. Trainers are scoped by the reporting service.</p>
       <div className="reports-filters__actions"><Button type="submit">Apply filters</Button><Button onClick={onReset} type="button" variant="secondary">Reset filters</Button></div>
       {validationError && <p className="form-error" role="alert">{validationError}</p>}
@@ -156,8 +157,8 @@ function TrainerActivityFilters({ draft, onApply, onReset, onUpdate, validationE
 function CompetitionFilters({ draft, onApply, onReset, onUpdate, validationError }) {
   return (
     <form className="reports-filters" onSubmit={onApply}>
-      <label className="field" htmlFor="competition-reports-start-date"><span className="field__label">Start date</span><input className="field__input" id="competition-reports-start-date" onChange={(event) => onUpdate({ startDate: event.target.value })} type="date" value={draft.startDate} /></label>
-      <label className="field" htmlFor="competition-reports-end-date"><span className="field__label">End date</span><input className="field__input" id="competition-reports-end-date" onChange={(event) => onUpdate({ endDate: event.target.value })} type="date" value={draft.endDate} /></label>
+      <TemporalPickerField id="competition-reports-start-date" label="Start date" onChange={(event) => onUpdate({ startDate: event.target.value })} type="date" value={draft.startDate} />
+      <TemporalPickerField id="competition-reports-end-date" label="End date" onChange={(event) => onUpdate({ endDate: event.target.value })} type="date" value={draft.endDate} />
       <label className="field" htmlFor="competition-reports-status"><span className="field__label">Competition status</span><select className="field__input" id="competition-reports-status" onChange={(event) => onUpdate({ status: event.target.value || null })} value={draft.status ?? ''}><option value="">All statuses</option><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
       <label className="field" htmlFor="competition-reports-result-type"><span className="field__label">Result type</span><select className="field__input" id="competition-reports-result-type" onChange={(event) => onUpdate({ resultType: event.target.value || null })} value={draft.resultType ?? ''}><option value="">All result types</option><option value="individual">Individual</option><option value="team">Team</option></select></label>
       <p className="reports-filters__note">Competition filtering is unavailable because the current client API has no bounded authorized competition search. Status and result type filters narrow the server-authorized result set.</p>

@@ -7,6 +7,7 @@ import { EmptyState } from '../../components/feedback/EmptyState'
 import { ErrorState } from '../../components/feedback/ErrorState'
 import { LoadingState } from '../../components/feedback/LoadingState'
 import { Card } from '../../components/ui/Card'
+import { TemporalPickerField } from '../../components/ui/TemporalPickerField'
 import { schoolDateBoundaryToIso, schoolDateFromInstant, schoolTimeFromInstant, todayInSchoolTimezone } from '../../utils/scheduleDateTime'
 import { getAuthoritativeSchoolSettings } from '../calendar/calendarApi'
 import { listGroups } from '../groups/groupsApi'
@@ -134,10 +135,7 @@ export function AttendanceMatrixPage() {
             {groupsQuery.data?.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
           </select>
         </label>
-        <label className="field" htmlFor="attendance-month">
-          <span className="field__label">Month</span>
-          <input className="field__input" id="attendance-month" onChange={(event) => setMonth(event.target.value)} type="month" value={month} />
-        </label>
+        <TemporalPickerField id="attendance-month" label="Month" onChange={(event) => setMonth(event.target.value)} type="month" value={month} />
       </section>
       {schoolSettingsQuery.isLoading || groupsQuery.isLoading || (groupId && matrixQuery.isLoading) ? <LoadingState label="Loading attendance history" /> : null}
       {schoolSettingsQuery.error || groupsQuery.error || matrixQuery.error ? <ErrorState title="Unable to load attendance history" /> : null}
