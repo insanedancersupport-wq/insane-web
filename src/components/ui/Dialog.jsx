@@ -1,8 +1,18 @@
 import { X } from 'lucide-react'
+import { useEffect } from 'react'
 
 import { Button } from './Button'
 
 export function Dialog({ children, footer, onClose, open, scrollable = false, title }) {
+  useEffect(() => {
+    if (!open) {
+      return undefined
+    }
+
+    document.body.classList.add('dialog-open')
+    return () => document.body.classList.remove('dialog-open')
+  }, [open])
+
   if (!open) {
     return null
   }
@@ -19,7 +29,7 @@ export function Dialog({ children, footer, onClose, open, scrollable = false, ti
           <h2 id="dialog-title">{title}</h2>
           <Button
             aria-label="Close dialog"
-            className="icon-button"
+            className="dialog__close-button icon-button"
             onClick={onClose}
             variant="tertiary"
           >

@@ -91,4 +91,25 @@ describe('AppShell user menu', () => {
     renderShell(trainer)
     expect(screen.getAllByRole('link', { name: 'Reports' }).every((link) => link.getAttribute('href') === '/app/reports')).toBe(true)
   })
+
+  it('limits mobile navigation to the five primary destinations', () => {
+    renderShell({
+      profile: { full_name: 'Alex Admin', role: 'admin' },
+      session: { user: { email: 'admin@example.test' } },
+      signOut: vi.fn(),
+    })
+
+    const bottomNavigation = screen
+      .getAllByRole('navigation', { name: 'Primary navigation' })
+      .find((navigation) => navigation.classList.contains('navigation--bottom'))
+
+    expect(bottomNavigation).toBeDefined()
+    expect(Array.from(bottomNavigation.querySelectorAll('a')).map((link) => link.textContent)).toEqual([
+      'Dashboard',
+      'Calendar',
+      'Tasks',
+      'Groups',
+      'More',
+    ])
+  })
 })
