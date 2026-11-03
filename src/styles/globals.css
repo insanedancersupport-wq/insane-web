@@ -631,6 +631,8 @@ a:focus-visible {
 .field {
   display: grid;
   gap: var(--space-2);
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .field__label {
@@ -639,9 +641,10 @@ a:focus-visible {
 }
 
 .field__input {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   min-height: 46px;
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border);
@@ -649,6 +652,10 @@ a:focus-visible {
   background: var(--color-surface);
   color: var(--color-text);
   font-size: 1rem;
+}
+
+.field__input:is([type='date'], [type='time'], [type='month'], [type='datetime-local']) {
+  min-inline-size: 0;
 }
 
 .field__input::placeholder {
@@ -1243,7 +1250,12 @@ a:focus-visible {
 
 .calendar-form-times {
   display: grid;
+  min-inline-size: 0;
   gap: var(--space-4);
+}
+
+.calendar-form-times > .field {
+  min-inline-size: 0;
 }
 
 .calendar-entry-details {
@@ -1389,6 +1401,24 @@ a:focus-visible {
 .badge--task-high { background: rgb(239 68 68 / 20%); color: #ff8e8e; }
 
 @media (max-width: 680px) {
+  .reports-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: var(--space-1);
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reports-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .reports-filters__actions .button {
+    flex: 1 1 140px;
+  }
+
   .task-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
