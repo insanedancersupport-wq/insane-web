@@ -631,6 +631,8 @@ a:focus-visible {
 .field {
   display: grid;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
   min-inline-size: 0;
   max-inline-size: 100%;
 }
@@ -642,6 +644,9 @@ a:focus-visible {
 
 .field__input {
   display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   inline-size: 100%;
   min-inline-size: 0;
   max-inline-size: 100%;
@@ -655,6 +660,10 @@ a:focus-visible {
 }
 
 .field__input:is([type='date'], [type='time'], [type='month'], [type='datetime-local']) {
+  /* WebKit treats native temporal controls as replaced elements with an intrinsic minimum width. */
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-inline-size: 0;
 }
 
