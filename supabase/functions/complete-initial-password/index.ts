@@ -1,5 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
+import { hasInvitationProvenance } from './eligibility.js'
+
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -94,6 +96,10 @@ Deno.serve(async (request) => {
   const { data: targetUserData, error: targetUserError } = await adminClient.auth.admin.getUserById(userData.user.id)
   if (targetUserError || !targetUserData.user) {
     return respond(500, { error: 'Password setup is unavailable.' })
+  }
+
+  if (!hasInvitationProvenance(targetUserData.user)) {
+    return respond(403, { error: 'An invitation is required to complete account setup.' })
   }
 
   const { error: passwordUpdateError } = await adminClient.auth.admin.updateUserById(userData.user.id, { password })

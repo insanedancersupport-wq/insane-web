@@ -19,17 +19,25 @@ npm run lint
 # Run all Vitest tests
 npm test
 
-# Run one test file
+# Run one Vitest file
 npm test -- src/app/App.test.jsx
+
+# Run one Vitest test by name
+npm test -- src/app/App.test.jsx -t "renders"
 
 # Run one database test file against local Supabase
 npx supabase test db --local supabase/tests/schedule_conflicts.sql
+
+# Run the local Playwright invitation/onboarding lifecycle
+# Requires the local Supabase stack, Chromium at /snap/bin/chromium,
+# and the E2E_* variables used by e2e/local-invitation-lifecycle.pw.js.
+npm run test:e2e
 
 # Create the production build
 npm run build
 ```
 
-Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `src/test/setup.js`, which registers `@testing-library/jest-dom` matchers.
+Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `src/test/setup.js`, which registers `@testing-library/jest-dom` matchers. Database tests require the local Supabase services to be running; their SQL files are under `supabase/tests/`. The Playwright script is an integration test for the invitation, mandatory password setup, and post-onboarding authorization path, not a substitute for the focused Vitest or pgTAP tests.
 
 ## Architecture
 
@@ -39,8 +47,11 @@ Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `s
 - Use the singleton in `src/app/queryClient.js` for server state. Its defaults intentionally retry once and do not refetch on window focus; do not create feature-local query clients.
 - `src/services/supabaseClient.js` is the only current backend client boundary. It exports `supabase` as `null` when public environment values are absent, so features must handle unconfigured local environments explicitly.
 - Feature data access belongs in the feature's `*Api.js` module. Those modules validate required identifiers, translate Supabase failures into user-facing errors, and return server data; pages compose them with TanStack Query and React Hook Form/Zod rather than duplicating server records in component state.
+- TanStack Query owns server-state caching through the shared client. Query keys must include the authenticated user and applied filters whenever the result is user- or filter-scoped; auth teardown cancels and removes user-scoped dashboard/report queries.
+- Keep the data flow layered: route/page components handle composition and UI state, feature API modules perform Supabase reads/writes/RPC calls and error translation, and PostgreSQL migrations/RPCs/RLS enforce authorization, integrity, reconciliation, conflicts, and aggregates.
 - Build new UI in the feature-oriented structure specified by the master plan: feature code under `src/features/`, reusable UI/layout/feedback/form elements under `src/components/`, shared hooks in `src/hooks/`, and domain-neutral helpers in `src/utils/`. Keep business logic out of presentational components.
 - Supabase schema changes go in append-only migrations under `supabase/migrations/`. Privileged user-management work belongs in the server-side `supabase/functions/admin-users/` Edge Function, not the browser.
+- The `complete-initial-password` Edge Function owns the initial invitation password completion path; do not mark onboarding complete from browser state or update the onboarding timestamp directly.
 
 ## UI and testing conventions
 
@@ -56,6 +67,8 @@ Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `s
 - Calendar values are instants in the database, but every calendar date/time input, range, and display must use the authoritative `school_settings` timezone through `src/utils/scheduleDateTime.js`. Do not use browser-local parsing of `YYYY-MM-DD` as the school-time conversion authority.
 - Classes require a group, responsible trainer, and room. Room and trainer conflicts, cancelled-entry behavior, and daylight-saving edge cases are database-enforced; preserve the actionable error translation in `calendarApi.js`.
 - The `school_settings` record is a protected singleton. Its timezone cannot be reinterpreted after schedule data exists, so schema or calendar work must preserve that invariant.
+- Attendance is historical operational data: eligibility is checked when a mark is created, while persisted marks remain reportable after later membership changes. Recovery is same-group attendance status, not a cross-group relationship.
+- Reports and dashboard aggregates must use their authorized server-side RPCs and preserve their documented date bounds, pagination/cursor contracts, and school-local timezone semantics; do not recreate visibility or aggregates in the browser.
 
 ## Supabase and security invariants
 
@@ -63,4 +76,5 @@ Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `s
 - Supabase Row Level Security is the authorization boundary. Frontend visibility or route guards are not authorization, and trainer restrictions must be enforced by PostgreSQL/Supabase RLS.
 - Keep `SECURITY DEFINER` authorization helpers in the non-API `private` schema with an empty `search_path`; expose only reviewed public RPCs with explicit execution grants. Do not grant API roles broad access to helpers or privileged functions.
 - Model database tables with UUID primary keys, `created_at`/`updated_at` timestamps, lowercase `snake_case`, foreign keys, and database constraints. Store timestamps in UTC and use the school timezone setting for display.
+- Use database constraints and triggers for invariants that span rows or requests, and add/extend pgTAP coverage in `supabase/tests/` with each security or integrity migration. Never rewrite an applied migration; add a new timestamped migration for a correction.
 - Do not duplicate server data in client state. Do not denormalize values such as group student counts or schedules when their relational source is authoritative.

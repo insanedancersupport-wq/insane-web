@@ -101,7 +101,7 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select results_eq(
   $$select first_name, last_name from public.get_competition_participant_display('d5000000-0000-4000-8000-000000000001')$$,
   $$values ('Visible'::text, 'Student'::text)$$,
-  'unassigned trainer sees associated participant names'
+  'unassigned active trainer sees shared participant names by accepted collaboration design'
 );
 
 select is(

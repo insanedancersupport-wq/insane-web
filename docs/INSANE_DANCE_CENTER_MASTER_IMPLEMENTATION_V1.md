@@ -1712,7 +1712,7 @@ Integrate relevant items into dashboard.
 
 - admin manages both modules;
 - trainer sees assigned tasks;
-- trainer sees relevant competitions;
+- trainer can read shared competition information for collaboration;
 - no excluded chat/announcement functionality added.
 
 ---
