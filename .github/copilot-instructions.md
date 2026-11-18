@@ -4,6 +4,7 @@
 
 - This is a mobile-first internal management SPA for dance-school administrators and trainers. The approved scope is the MVP modules in `docs/INSANE_DANCE_CENTER_MASTER_IMPLEMENTATION_V1.md`; do not add excluded modules (for example, payments, chat, parent-facing features, marketing, or native apps).
 - Treat `docs/INSANE_DANCE_CENTER_MASTER_IMPLEMENTATION_V1.md` as the implementation authority. Implement one milestone at a time, and update `docs/IMPLEMENTATION_STATUS.md` after completing a milestone.
+- Before changing the application boundary, read `docs/ARCHITECTURE.md` and `docs/SECURITY.md`; use `docs/IMPLEMENTATION_STATUS.md` to determine which contracts are already implemented locally versus still pending deployment.
 - A completed milestone must pass `npm run lint`, `npm test`, and `npm run build` before its status is updated.
 - The locked stack is React 19, Vite, JavaScript/JSX, React Router, TanStack Query, plain CSS, Supabase, and Netlify. Do not introduce another frontend framework, Tailwind, a large UI library, or a standalone backend without explicit approval.
 
@@ -51,7 +52,7 @@ Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `s
 - Keep the data flow layered: route/page components handle composition and UI state, feature API modules perform Supabase reads/writes/RPC calls and error translation, and PostgreSQL migrations/RPCs/RLS enforce authorization, integrity, reconciliation, conflicts, and aggregates.
 - Build new UI in the feature-oriented structure specified by the master plan: feature code under `src/features/`, reusable UI/layout/feedback/form elements under `src/components/`, shared hooks in `src/hooks/`, and domain-neutral helpers in `src/utils/`. Keep business logic out of presentational components.
 - Supabase schema changes go in append-only migrations under `supabase/migrations/`. Privileged user-management work belongs in the server-side `supabase/functions/admin-users/` Edge Function, not the browser.
-- The `complete-initial-password` Edge Function owns the initial invitation password completion path; do not mark onboarding complete from browser state or update the onboarding timestamp directly.
+- The `complete-initial-password` Edge Function owns the initial invitation password completion path; do not mark onboarding complete from browser state or update the onboarding timestamp directly. Edge Functions may use server-only Supabase secrets; browser code may use only the publishable-key contract.
 
 ## UI and testing conventions
 
