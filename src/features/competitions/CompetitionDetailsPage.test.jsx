@@ -116,6 +116,22 @@ describe('CompetitionDetailsPage', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('2 students enrolled successfully.')
   })
 
+  it('disables group enrollment while the mutation is pending', async () => {
+    let resolveEnrollment
+    api.getCurrentTrainerId.mockResolvedValue('trainer-id')
+    api.enrollCompetitionGroup.mockReturnValue(new Promise((resolve) => {
+      resolveEnrollment = resolve
+    }))
+    renderPage({ id: 'responsible-profile', role: 'trainer' })
+
+    const enrollButton = await screen.findByRole('button', { name: 'Enroll students from group' })
+    fireEvent.click(enrollButton)
+
+    await waitFor(() => expect(enrollButton).toBeDisabled())
+    resolveEnrollment(2)
+    await waitFor(() => expect(enrollButton).not.toBeDisabled())
+  })
+
   it('sends only changed editable competition fields on admin edit', async () => {
     renderPage({ id: 'admin-profile', role: 'admin' })
 

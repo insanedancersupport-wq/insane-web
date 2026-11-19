@@ -105,7 +105,7 @@ function CompetitionEditForm({ competition, onSubmit }) {
   )
 }
 
-function SelectForm({ buttonLabel, id, label, onSubmit, options, value, onChange }) {
+function SelectForm({ buttonLabel, disabled, id, label, onSubmit, options, value, onChange }) {
   return (
     <form className="entity-form" onSubmit={(event) => {
       event.preventDefault()
@@ -119,7 +119,7 @@ function SelectForm({ buttonLabel, id, label, onSubmit, options, value, onChange
         </select>
       </label>
       <div className="form-actions">
-        <Button disabled={!value} type="submit">{buttonLabel}</Button>
+        <Button disabled={!value || disabled} type="submit">{buttonLabel}</Button>
       </div>
     </form>
   )
@@ -276,7 +276,17 @@ export function CompetitionDetailsPage() {
   }, [eligibleStudentsQuery.data, participantsQuery.data])
 
   function closeDialog() {
-    if (!editMutation.isPending && !deleteMutation.isPending && !participantMutation.isPending) {
+    if (
+      !editMutation.isPending
+      && !deleteMutation.isPending
+      && !trainerMutation.isPending
+      && !removeTrainerMutation.isPending
+      && !groupMutation.isPending
+      && !removeGroupMutation.isPending
+      && !enrollGroupMutation.isPending
+      && !participantMutation.isPending
+      && !removeParticipantMutation.isPending
+    ) {
       setDialog(null)
       setSelectedId('')
     }
@@ -350,7 +360,15 @@ export function CompetitionDetailsPage() {
             {trainersQuery.data?.map((assignment) => (
               <li key={assignment.trainer_id}>
                 <span>{trainerName(assignment)}</span>
-                {isAdmin && <Button onClick={() => runMutation(removeTrainerMutation, { competitionId, trainerId: assignment.trainer_id })} variant="tertiary">Remove</Button>}
+                {isAdmin && (
+                  <Button
+                    disabled={removeTrainerMutation.isPending}
+                    onClick={() => runMutation(removeTrainerMutation, { competitionId, trainerId: assignment.trainer_id })}
+                    variant="tertiary"
+                  >
+                    {removeTrainerMutation.isPending ? 'Removing...' : 'Remove'}
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -369,8 +387,20 @@ export function CompetitionDetailsPage() {
                 <span>{assignment.name}</span>
                 {canManage && (
                   <span className="competition-row-actions">
-                    <Button onClick={() => runMutation(enrollGroupMutation, { competitionId, groupId: assignment.group_id })} variant="secondary">Enroll students from group</Button>
-                    <Button onClick={() => runMutation(removeGroupMutation, { competitionId, groupId: assignment.group_id })} variant="tertiary">Remove group</Button>
+                    <Button
+                      disabled={enrollGroupMutation.isPending}
+                      onClick={() => runMutation(enrollGroupMutation, { competitionId, groupId: assignment.group_id })}
+                      variant="secondary"
+                    >
+                      {enrollGroupMutation.isPending ? 'Enrolling...' : 'Enroll students from group'}
+                    </Button>
+                    <Button
+                      disabled={removeGroupMutation.isPending}
+                      onClick={() => runMutation(removeGroupMutation, { competitionId, groupId: assignment.group_id })}
+                      variant="tertiary"
+                    >
+                      {removeGroupMutation.isPending ? 'Removing...' : 'Remove group'}
+                    </Button>
                   </span>
                 )}
               </li>
@@ -425,17 +455,17 @@ export function CompetitionDetailsPage() {
       <Dialog onClose={closeDialog} open={dialog === 'add-trainer'} title="Add responsible trainer">
         {eligibleTrainersQuery.isLoading && <LoadingState label="Loading trainers" />}
         {eligibleTrainersQuery.error && <ErrorState title="Unable to load trainers" />}
-        {eligibleTrainersQuery.data && <SelectForm buttonLabel="Assign trainer" id="responsible-trainer" label="Eligible trainer" onChange={setSelectedId} onSubmit={() => runMutation(trainerMutation, { competitionId, trainerId: selectedId })} options={trainerOptions} value={selectedId} />}
+        {eligibleTrainersQuery.data && <SelectForm buttonLabel={trainerMutation.isPending ? 'Assigning...' : 'Assign trainer'} disabled={trainerMutation.isPending} id="responsible-trainer" label="Eligible trainer" onChange={setSelectedId} onSubmit={() => runMutation(trainerMutation, { competitionId, trainerId: selectedId })} options={trainerOptions} value={selectedId} />}
       </Dialog>
       <Dialog onClose={closeDialog} open={dialog === 'add-group'} title="Add participating group">
         {availableGroupsQuery.isLoading && <LoadingState label="Loading groups" />}
         {availableGroupsQuery.error && <ErrorState title="Unable to load groups" />}
-        {availableGroupsQuery.data && <SelectForm buttonLabel="Add group" id="competition-group" label="Available group" onChange={setSelectedId} onSubmit={() => runMutation(groupMutation, { competitionId, groupId: selectedId })} options={groupOptions} value={selectedId} />}
+        {availableGroupsQuery.data && <SelectForm buttonLabel={groupMutation.isPending ? 'Adding...' : 'Add group'} disabled={groupMutation.isPending} id="competition-group" label="Available group" onChange={setSelectedId} onSubmit={() => runMutation(groupMutation, { competitionId, groupId: selectedId })} options={groupOptions} value={selectedId} />}
       </Dialog>
       <Dialog onClose={closeDialog} open={dialog === 'add-participant'} title="Enroll individual student">
         {eligibleStudentsQuery.isLoading && <LoadingState label="Loading active students" />}
         {eligibleStudentsQuery.error && <ErrorState title="Unable to load active students" />}
-        {eligibleStudentsQuery.data && <SelectForm buttonLabel="Enroll student" id="competition-student" label="Active student" onChange={setSelectedId} onSubmit={() => runMutation(participantMutation, { competitionId, studentId: selectedId })} options={studentOptions} value={selectedId} />}
+        {eligibleStudentsQuery.data && <SelectForm buttonLabel={participantMutation.isPending ? 'Enrolling...' : 'Enroll student'} disabled={participantMutation.isPending} id="competition-student" label="Active student" onChange={setSelectedId} onSubmit={() => runMutation(participantMutation, { competitionId, studentId: selectedId })} options={studentOptions} value={selectedId} />}
       </Dialog>
       <Dialog onClose={closeDialog} open={dialog === 'remove-participant'} title="Remove participant">
         <form className="entity-form" onSubmit={(event) => {
