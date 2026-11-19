@@ -29,16 +29,21 @@ npm test -- src/app/App.test.jsx -t "renders"
 # Run one database test file against local Supabase
 npx supabase test db --local supabase/tests/schedule_conflicts.sql
 
-# Run the local Playwright invitation/onboarding lifecycle
-# Requires the local Supabase stack, Chromium at /snap/bin/chromium,
-# and the E2E_* variables used by e2e/local-invitation-lifecycle.pw.js.
+# Run read-only Playwright smoke tests across configured browser projects
 npm run test:e2e
+
+# Run all Playwright tests, including opt-in mutating coverage
+npm run test:e2e:all
+
+# Run the local invitation/onboarding lifecycle against an isolated local stack
+npm run test:e2e:invitation
 
 # Create the production build
 npm run build
 ```
 
 Vitest configuration lives in `vite.config.js`: tests run in `jsdom` and load `src/test/setup.js`, which registers `@testing-library/jest-dom` matchers. Database tests require the local Supabase services to be running; their SQL files are under `supabase/tests/`. The Playwright script is an integration test for the invitation, mandatory password setup, and post-onboarding authorization path, not a substitute for the focused Vitest or pgTAP tests.
+Playwright configuration and environment isolation are documented in `docs/E2E.md`; mutating invitation tests must never target hosted Supabase.
 
 ## Architecture
 
