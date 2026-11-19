@@ -354,7 +354,7 @@ select set_config('request.jwt.claim.role', 'authenticated', true);
 select is(
   (select count(*) from public.competition_results),
   3::bigint,
-  'unassigned trainer can read competition results'
+  'unassigned active trainer can read shared competition results by accepted collaboration design'
 );
 
 select throws_ok(

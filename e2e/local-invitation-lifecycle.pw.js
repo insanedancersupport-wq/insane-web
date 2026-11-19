@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 
+import { requireSafeMutationEnvironment } from './testEnvironment.js'
+
 const appUrl = process.env.E2E_APP_URL ?? 'http://127.0.0.1:3000'
 const apiUrl = process.env.E2E_SUPABASE_URL ?? 'http://127.0.0.1:54321'
 const inbucketUrl = process.env.E2E_INBUCKET_URL ?? 'http://127.0.0.1:54324'
@@ -28,11 +30,9 @@ async function invitationUrl(inviteeEmail) {
   return match[0]
 }
 
-test.use({
-  launchOptions: { executablePath: '/snap/bin/chromium' },
-})
-
 test('completes a real local invitation lifecycle', async ({ browser }) => {
+  requireSafeMutationEnvironment()
+
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`
   const adminEmail = `e2e-admin-${suffix}@example.test`
   const inviteeEmail = `e2e-invitee-${suffix}@example.test`
